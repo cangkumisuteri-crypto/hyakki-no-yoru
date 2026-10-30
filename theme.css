@@ -243,7 +243,7 @@ svg.i{width:1em;height:1em;vertical-align:-.12em}
 /* ======================= TREASURE CHEST SEQUENCE ======================= */
 .cs{--tc:#ffe9a0;--tc2:#fff6d8;position:absolute;inset:0;display:block;padding:0;background:radial-gradient(ellipse at 50% 42%,rgba(24,12,46,.94),rgba(3,1,8,.98));overflow:hidden;touch-action:manipulation}
 .cs::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 56%,color-mix(in srgb,var(--tc) 22%,#10081e) 0%,rgba(6,3,12,.9) 55%,rgba(2,1,5,.97) 100%);transition:background .6s}
-.cs .cs-rays{position:absolute;left:50%;top:50%;width:1900px;height:1900px;margin:-950px 0 0 -950px;opacity:0;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--tc) 55%,transparent) 0 6deg,transparent 6deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 6%,transparent 56%);mask-image:radial-gradient(circle,#000 6%,transparent 56%);animation:spin 26s linear infinite;transition:opacity .6s;pointer-events:none}
+.cs .cs-rays{position:absolute;left:50%;top:50%;width:800px;height:800px;margin:-400px 0 0 -400px;opacity:0;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--tc) 55%,transparent) 0 6deg,transparent 6deg 20deg);-webkit-mask-image:radial-gradient(circle closest-side,#000 8%,transparent 100%);mask-image:radial-gradient(circle closest-side,#000 8%,transparent 100%);animation:spin 26s linear infinite;transition:opacity .6s;pointer-events:none}
 .cs.s-burst .cs-rays,.cs.s-reveal .cs-rays{opacity:.7}
 @keyframes spin{to{transform:rotate(360deg)}}
 .cs-title{position:absolute;left:0;right:0;top:calc(40px + var(--sat));text-align:center;font:var(--hdw) 56px/1.1 var(--hd);color:#fff1c8;letter-spacing:.1em;text-shadow:0 3px 0 #000,0 0 22px rgba(240,207,122,.55);animation:tabIn .7s var(--ease) both}
@@ -251,11 +251,11 @@ svg.i{width:1em;height:1em;vertical-align:-.12em}
 .cs-chest{position:absolute;left:50%;width:480px;margin-left:-240px;top:calc(50% - var(--ct,170px));aspect-ratio:var(--ar,1.2);transform-origin:50% 90%;transition:transform .8s var(--ease),opacity .6s;cursor:pointer;filter:drop-shadow(0 22px 14px rgba(0,0,0,.65))}
 .port .cs{--ct:210px}
 .cs-chest>*,.cs-body>*{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat}
-.cs-aura{inset:-1000px!important;background:radial-gradient(circle 980px at 50% 50%,color-mix(in srgb,var(--tc) 70%,transparent) 0,color-mix(in srgb,var(--tc) 25%,transparent) 506px,transparent 980px)!important;opacity:.18;animation:aura 2.2s ease-in-out infinite;transition:opacity .4s;pointer-events:none;z-index:0}
-@keyframes aura{50%{transform:scale(1.14);opacity:.3}}
+.cs-aura{inset:50% auto auto 50%!important;width:600px;height:600px;margin:-300px 0 0 -300px;border-radius:50%;background:radial-gradient(circle closest-side at 50% 50%,color-mix(in srgb,var(--tc) 70%,transparent) 0,color-mix(in srgb,var(--tc) 25%,transparent) 52%,transparent 100%)!important;opacity:.18;animation:aura 2.2s ease-in-out infinite;transition:opacity .4s;pointer-events:none;z-index:0;will-change:auto}
+@keyframes aura{50%{opacity:.3}}
 .cs.s-hint .cs-aura{opacity:.9;animation:aura .5s ease-in-out infinite}
 .cs.s-shake .cs-aura{opacity:.4}
-.cs.s-burst .cs-aura,.cs.s-reveal .cs-aura{opacity:1;animation:none;transform:scale(1.3)}
+.cs.s-burst .cs-aura,.cs.s-reveal .cs-aura{opacity:1;animation:none}
 .cs-body{position:absolute;inset:0;animation:csIdle 2.4s ease-in-out infinite;z-index:1}
 @keyframes csIdle{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-8px) rotate(.6deg)}}
 .cs-base,.cs-lid,.cs-wood{inset:0;background-image:var(--img)}
@@ -552,6 +552,7 @@ html[lang=en] .port .ci-txt b{font-size:40px}
    iOS Safari kills the page when composited-layer / backing-store memory runs out. At DPR 3 every layer costs 9x its CSS area, so the big
    animated, masked, blurred and blended layers are removed or shrunk here. Scoped to html.lite (set by the bootstrap in index.html). */
 html:has(.modal.cs) #world,html:has(.modal.cs) #bg{visibility:hidden}
+html:has(.modal.cs) #s-battle{display:none}
 .lite #bg.bgdof{filter:none;will-change:auto}
 .lite #world .dof,.lite #wFore,.lite .toro,.lite .hl.near .lamp{filter:none!important}
 .lite #wFore,.lite #wFogA,.lite #wFogB,.lite #wFogC{display:none}
@@ -602,8 +603,9 @@ html:has(.modal.cs) #world,html:has(.modal.cs) #bg{visibility:hidden}
 /* portrait: the 44px-physical tools are taller than the 54px top bar; hang them from the top edge instead of centring them off-screen */
 .port .b-tools,.land .b-tools{align-self:flex-start;margin-top:2px}
 
-/* chest aura: the desktop aura is a 2000x2000 design-px gradient (x1.3 on burst) = ~100-160 MB of layer memory at DPR 3, the biggest single GPU allocation in the game.
-   On lite/safe devices it is shrunk to ~1/4 the area and never scaled, with a matching smaller gradient. */
-.lite .cs-aura{inset:-300px!important;background:radial-gradient(circle 300px at 50% 50%,color-mix(in srgb,var(--tc) 70%,transparent) 0,color-mix(in srgb,var(--tc) 25%,transparent) 155px,transparent 300px)!important}
-.lite .cs.s-burst .cs-aura,.lite .cs.s-reveal .cs-aura{transform:none}
-.lite2 .cs-aura{inset:-220px!important;background:radial-gradient(circle 220px at 50% 50%,color-mix(in srgb,var(--tc) 60%,transparent) 0,transparent 220px)!important}
+/* chest aura: fixed-size circle (600px design => ~310 css px on iPhone), never scaled or will-change'd, so it can never become a multi-hundred-MB layer; safe mode is smaller and static */
+.lite2 .cs .cs-aura{width:440px;height:440px;margin:-220px 0 0 -220px;animation:none!important}
+
+/* the stamp pops in from scale 3.2 (a 1200px-wide text layer); on lite devices start from 1.5 */
+@keyframes stampL{0%{opacity:0;transform:scale(1.5) rotate(-6deg)}35%{opacity:1;transform:scale(.94) rotate(-3deg)}55%{transform:scale(1.04) rotate(-3deg)}100%{opacity:1;transform:scale(1) rotate(-3deg)}}
+.lite .cs.s-reveal .cs-stamp{animation-name:stampL}

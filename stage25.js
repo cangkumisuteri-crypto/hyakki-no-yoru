@@ -216,6 +216,8 @@
   function stop() {
     S.running = false; if (bg) { bg.classList.remove('bgdof'); bg.style.transform = ''; }
   }
+  /* battle is over: stop the 2.5D loop and wipe its canvases now, so the victory/chest screens do not keep running (and holding) a full battle renderer behind them */
+  S.end = function () { stop(); try { if (actx) actx.clearRect(0, 0, acv.width, acv.height); } catch (e) {} };
   S.begin = function (stageDef) {
     world = $('world'); bg = $('bg'); C = cfg(); W = C.W; H = C.H; M = { x: W / 2, y: H / 2 };
     if (!S.props.length || !S.props[0].el.isConnected) buildProps();

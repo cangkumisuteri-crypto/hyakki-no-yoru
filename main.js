@@ -59,7 +59,7 @@
   };
   const SHARDS = { '1-3': { kappa: 5 }, '1-4': { yukihana: 5 }, '1-5': { karasuba: 5 } };
   UI.onBattleEnd = function (res) {
-    FX.clear(); UI.closeAll(); const st = res.stage, id = res.id;
+    FX.clear(); if (window.Stage && Stage.end) Stage.end(); UI.closeAll(); const st = res.stage, id = res.id;
     if (res.retreat || !res.win) { S.d.winStreak = 0; S.save(); UI.hub('journey'); UI.toast(res.retreat ? T('撤退した', 'You retreated') : T('敗北… 準備を整えて再挑戦しよう', 'Defeated… prepare and try again')); return; }
     const first = !S.d.cleared[id]; S.d.winStreak++; const sb = Math.min(0.5, 0.05 * (S.d.winStreak - 1));
     const exp = Math.round(st.exp * (1 + (res.mealExp || 0)) * (1 + sb)), gold = Math.round(st.gold * (1 + sb) * (first ? 1 : 0.8));

@@ -22,15 +22,17 @@
   var phone = false; try { phone = window.matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 820; } catch (e) {}
   if (/[?&]safe=0/.test(q)) { set('hy_crash', '0'); set('hy_safe', '0'); }
   /* unclean exit detection: hy_run is "1" while the page is visible and cleared when it is hidden/closed. Still "1" on the next boot = it crashed or was killed while in use. */
-  var crash = +get('hy_crash') || 0;
-  if (get('hy_run') === '1') { crash++; set('hy_crash', String(crash)); }
+  var crash = +get('hy_crash') || 0, unclean = get('hy_run') === '1', t0 = Date.now();
+  if (unclean) { crash++; set('hy_crash', String(crash)); }
   set('hy_run', '1');
-  function clean() { set('hy_run', '0'); }
+  /* a session that stayed alive for 90 s and then exited cleanly proves the renderer is fine: forget old crashes (a persistent hy_safe from script errors is kept) */
+  function clean() { set('hy_run', '0'); if (Date.now() - t0 > 90000 && !H.lite2) set('hy_crash', '0'); }
   addEventListener('pagehide', clean);
   document.addEventListener('visibilitychange', function () { if (document.hidden) clean(); else set('hy_run', '1'); });
   var m = /[?&]lite=(\d)/.exec(q), forced = m ? +m[1] : -1;
   var lite = forced >= 0 ? forced >= 1 : (ios || phone || crash > 0);
-  var safe = forced >= 0 ? forced >= 2 : (crash >= 2 || get('hy_safe') === '1');
+  /* the previous run ended without pagehide (Safari killed the tab): this run starts in safe mode straight away */
+  var safe = forced >= 0 ? forced >= 2 : (unclean || crash >= 2 || get('hy_safe') === '1');
   H.ios = ios; H.crashes = crash; H.lite = lite || safe; H.lite2 = safe;
   if (H.lite) de.classList.add('lite'); if (H.lite2) de.classList.add('lite2');
   /* a script error from our own code downgrades the renderer on the fly instead of leaving a broken screen; repeated errors are remembered */

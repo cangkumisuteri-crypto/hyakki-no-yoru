@@ -94,7 +94,7 @@ svg.i{width:1em;height:1em;vertical-align:-.12em}
 .top-r{gap:14px}
 
 /* ---------- bottom tab bar ---------- */
-#hubBody{top:calc(var(--tbh) + var(--sat) - 8px);bottom:calc(var(--nvh) + var(--sab) - 6px);padding:12px calc(30px + var(--sar)) 30px calc(30px + var(--sal))}
+#hubBody{top:calc(var(--tbh) + var(--sat) - 8px);bottom:calc(var(--nvh) + var(--sab) - 6px);padding:12px calc(30px + var(--sar)) calc(22px + var(--t44,44px)) calc(30px + var(--sal));scroll-padding-bottom:calc(22px + var(--t44,44px));-webkit-overflow-scrolling:touch}
 .nav{height:calc(var(--nvh) + var(--sab));padding:0 var(--sar) var(--sab) var(--sal);border:none;background:url(ui/washi.png) 0 0/256px,linear-gradient(180deg,#241a3c,#0e0818 70%);box-shadow:0 -10px 24px rgba(0,0,0,.6);z-index:7}
 .nav::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:var(--goldline);box-shadow:0 2px 8px rgba(0,0,0,.6),0 0 14px rgba(240,207,122,.35)}
 .nav::after{content:"";position:absolute;left:0;right:0;top:5px;height:1px;background:rgba(0,0,0,.6)}
@@ -597,7 +597,7 @@ html:has(.modal.cs) #s-battle{display:none}
 /* landscape battle: command menu is bottom-anchored and sized from the tap-target height so it never grows up into the field */
 .land{--cmdh:max(78px,var(--t44,78px))}
 .land .b-cmd{top:auto;bottom:calc(8px + var(--sab));left:auto;right:calc(18px + var(--sar));width:540px;grid-auto-rows:var(--cmdh)}
-.land .cmd{height:var(--cmdh)}
+.land .cmd{height:var(--cmdh);padding-top:3px;padding-bottom:3px}.land .cmd b{line-height:1.1}.land .cmd.lg b{font-size:17px}
 .land .b-ki{top:112px;bottom:auto;left:calc(18px + var(--sal,0px));right:auto;width:auto;justify-content:flex-start}
 .land .b-hint{top:62px}
 /* hint bubble: size to content (left:50% otherwise shrinks it to half the screen and wraps mid-word), keep it above the enemy row in portrait */
@@ -613,3 +613,5 @@ html:has(.modal.cs) #s-battle{display:none}
 /* the stamp pops in from scale 3.2 (a 1200px-wide text layer); on lite devices start from 1.5 */
 @keyframes stampL{0%{opacity:0;transform:scale(1.5) rotate(-6deg)}35%{opacity:1;transform:scale(.94) rotate(-3deg)}55%{transform:scale(1.04) rotate(-3deg)}100%{opacity:1;transform:scale(1) rotate(-3deg)}}
 .lite .cs.s-reveal .cs-stamp{animation-name:stampL}
+
+.stagebox .advice{margin:6px 0 0;padding:6px 10px;border:1px solid #d9a441;border-radius:8px;background:rgba(217,164,65,.14);color:#ffd98a;font-size:15px;line-height:1.3;text-align:left}

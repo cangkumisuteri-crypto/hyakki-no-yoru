@@ -148,7 +148,7 @@
     const nameTxt = sk.n ? L(sk.n) : '';
     if (sk.ultimate) { if (window.Stage) Stage.focus(u, 1.3); await cutIn(u, sk); } else if (isA || sk.big || sk.charge || sk.summon) { banner(nameTxt, '', isA ? 'skill' : 'foe'); }
     if (sk.guard) { u.guard = true; u.el.classList.add('guarding'); A.guard(); pop(u, T('防御', 'GUARD'), 'st guard', -30); FX.play('buff', center(u).x, center(u).y); await wait(420); return; }
-    if (sk.charge) { u.charged = true; updateCard(u); A.warn(); shake(false); const ce = D.ENEMIES[u.key] || {}; hint(ce.chargeHint ? L(ce.chargeHint) : T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); FX.flash(u.col || '#ff62d8', 0.25, 0.4); await wait(900); hint(''); return; }
+    if (sk.charge) { u.charged = true; updateCard(u); A.warn(); shake(false); const ce = D.ENEMIES[u.key] || {}; hint(ce.chargeHint ? L(ce.chargeHint) : T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); FX.flash(u.col || '#ff62d8', 0.25, 0.4); await wait(900); return; } // the warning stays up (re-shown every command turn) until the charged strike lands
     if (sk.summon) { await summon(u, sk.summon); return; }
     const lunTs = sk.tgt === 'rand' ? null : pickTargets(u, sk, target);
     if (window.Stage) Stage.act(u, sk, lunTs || foes);
@@ -240,7 +240,7 @@
     let sk, key;
     if (u.boss) {
       const csk = D.ENEMIES[u.key].crushSk || 'crush'; // the charged follow-up skill (Arakami: crush, Narukami: tenwari)
-      if (u.charged) { u.charged = false; updateCard(u); key = csk; }
+      if (u.charged) { u.charged = false; updateCard(u); key = csk; hint(''); }
       else { const list = ((u.phase === 2 && D.ENEMIES[u.key].ai2) ? D.ENEMIES[u.key].ai2 : u.ai).filter((k) => k !== csk); key = list[u.aiPtr % list.length]; u.aiPtr++; }
     } else key = u.ai[Math.floor(Math.random() * u.ai.length)];
     sk = D.ENEMY_SK[key]; await wait(250);
@@ -253,6 +253,7 @@
   function playerTurn(u) {
     return new Promise((res) => {
       choose = { u: u, res: res }; tgtMode = null; renderCmd(u); renderTutorial(u);
+      { const bs = alive('e').find((e) => e.boss && e.charged); if (bs) { const ce = D.ENEMIES[bs.key] || {}; hint(ce.chargeHint ? L(ce.chargeHint) : T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); } }
       if (auto) setTimeout(autoPlay, 350 / speed);
     });
   }
@@ -264,7 +265,7 @@
     c.innerHTML = sks.map((sk, i) => {
       const ult = sk.ultimate, ok = ult ? u.ult >= 100 : ki >= (sk.cost || 0);
       const sub = ult ? ('奥義 ' + Math.floor(u.ult) + '%').replace('奥義', T('奥義', 'ULT')) : (sk.cost ? T('妖気 ', 'Yoki ') + sk.cost : (sk.guard ? T('妖気+1 奥義+20', '+1 Yoki +20 Ult') : T('妖気+1', '+1 Yoki')));
-      return '<button class="cmd ' + (ult ? 'ult ' : '') + (i === 3 ? 'guard ' : '') + (ok ? '' : 'dis') + '" data-i="' + i + '"><b>' + L(sk.n) + '</b><small>' + sub + '</small><em>' + L(sk.d) + '</em></button>';
+      return '<button class="cmd ' + (L(sk.n).length > 14 ? 'lg ' : '') + (ult ? 'ult ' : '') + (i === 3 ? 'guard ' : '') + (ok ? '' : 'dis') + '" data-i="' + i + '"><b>' + L(sk.n) + '</b><small>' + sub + '</small><em>' + L(sk.d) + '</em></button>';
     }).join('');
     c.querySelectorAll('.cmd').forEach((b) => b.addEventListener('click', () => onCmd(+b.dataset.i)));
     document.querySelectorAll('.card').forEach((e) => e.classList.remove('tgt'));
@@ -353,7 +354,7 @@
 
   B.start = function (id, o) {
     opts = Object.assign({ id: id }, o || {}); stage = D.STAGES[id]; ended = false; revived = false; round = 0; waveIdx = 0; summoned = false; hintState = 0; cur = null; choose = null; tgtMode = null;
-    stats = { dealt: 0, taken: 0, heal: 0 }; speed = S.d.set.speed || 1; auto = !!S.d.set.auto; B.on = true;
+    stats = { dealt: 0, taken: 0, heal: 0 }; speed = S.d.set.speed || 1; auto = !!S.d.set.auto; B.on = true; hint('');
     const ids = S.d.party.filter((id) => S.d.chars[id].own);
     U = { a: ids.map((id, i) => mkAlly(id, i)), e: [] };
     $('bg').style.backgroundImage = 'url(' + ART(stage.bg) + ')'; $('bEn').innerHTML = ''; $('bPa').innerHTML = ''; $('bCmd').innerHTML = ''; $('bCmd').classList.add('off'); $('bTl').innerHTML = '';

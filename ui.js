@@ -142,6 +142,9 @@
     const eny = []; st.waves.forEach((w) => w.forEach((k) => { if (!eny.includes(k)) eny.push(k); }));
     const stars = (S.d.stars && S.d.stars[id]) || (S.d.cleared[id] ? 1 : 0), lim = UI.roundLimit(id);
     const goals = '<div class="sgoal"><div>' + UI.starsHtml(1) + T('勝利する', 'Win the battle') + '</div><div>' + UI.starsHtml(2) + T('全員が生き残る', 'Everyone survives') + '</div><div>' + UI.starsHtml(3) + T(lim + 'ラウンド以内にクリア', 'Clear within ' + lim + ' rounds') + '</div></div>';
+    const lows = ids.filter((x) => S.d.chars[x].lv < st.rec - 1).length;
+    const spare = D.SLOTS.some((sl) => S.d.items.some((it) => it.slot === sl && !S.itemOwner(it.uid)) && ids.some((x) => !S.d.chars[x].eq[sl]));
+    const tips = (lows ? '<div class="advice">' + T('⚠ 推奨Lv.に届いていない仲間がいる(' + lows + '人)。強化・育成してから挑むと安全', '⚠ ' + lows + ' companion(s) below the recommended level. Train before the fight to stay safe') + '</div>' : '') + (spare ? '<div class="advice">' + T('⚠ 未装備の装備がある! 「編成」で装備しよう', '⚠ You have unequipped gear! Equip it in Party') + '</div>' : '');
     const pw = S.partyPower(), meal = S.d.buff && S.d.buff.left > 0 ? D.DISHES[S.d.buff.dish] : null;
     UI.modal({ cls: 'stagebox', title: id + '　' + L(st.n),
       html: '<div style="text-align:center">' + UI.starsHtml(stars) + '</div><div class="enrow">' + eny.map((k) => '<div class="enchip' + (D.ENEMIES[k].boss ? ' boss' : '') + '" style="background-image:url(' + ART(D.ENEMIES[k].img) + ')"><b>' + esc(L(D.ENEMIES[k].n)) + '</b></div>').join('') + '</div>' +
@@ -149,7 +152,7 @@
         '<div class="kv"><span>' + T('報酬', 'Rewards') + '</span><b>' + ico('gold') + st.gold + ' / EXP ' + st.exp + '</b></div>' +
         (first ? '<div class="kv wide"><span>' + T('初回', 'First clear') + '</span><b>' + fr.join(' ') + '</b></div>' : '') +
         '<div class="pm">' + ids.map((x) => '<div class="pchip" style="background-image:url(' + ART(x) + ')"><i>Lv' + S.d.chars[x].lv + '</i></div>').join('') + '</div>' +
-        goals + '<div class="meal">' + (meal ? T('料理効果: ', 'Meal: ') + L(meal.n) + ' (' + S.d.buff.left + T('戦', ' battles') + ')' : T('料理効果なし — 野営で料理を作ろう', 'No meal buff — cook at the camp')) + '</div>',
+        goals + tips + '<div class="meal">' + (meal ? T('料理効果: ', 'Meal: ') + L(meal.n) + ' (' + S.d.buff.left + T('戦', ' battles') + ')' : T('料理効果なし — 野営で料理を作ろう', 'No meal buff — cook at the camp')) + '</div>',
       btns: [{ t: T('出陣', 'Fight!'), cls: 'pri', fn: () => { UI.startStage(id); } }, { t: T('編成', 'Party'), fn: () => { UI.hub('party'); } }, { t: T('閉じる', 'Close'), cls: 'sub' }] });
   };
 

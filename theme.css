@@ -601,3 +601,9 @@ html:has(.modal.cs) #world,html:has(.modal.cs) #bg{visibility:hidden}
 .port .cmd{height:max(148px,var(--t44,44px))}
 /* portrait: the 44px-physical tools are taller than the 54px top bar; hang them from the top edge instead of centring them off-screen */
 .port .b-tools,.land .b-tools{align-self:flex-start;margin-top:2px}
+
+/* chest aura: the desktop aura is a 2000x2000 design-px gradient (x1.3 on burst) = ~100-160 MB of layer memory at DPR 3, the biggest single GPU allocation in the game.
+   On lite/safe devices it is shrunk to ~1/4 the area and never scaled, with a matching smaller gradient. */
+.lite .cs-aura{inset:-300px!important;background:radial-gradient(circle 300px at 50% 50%,color-mix(in srgb,var(--tc) 70%,transparent) 0,color-mix(in srgb,var(--tc) 25%,transparent) 155px,transparent 300px)!important}
+.lite .cs.s-burst .cs-aura,.lite .cs.s-reveal .cs-aura{transform:none}
+.lite2 .cs-aura{inset:-220px!important;background:radial-gradient(circle 220px at 50% 50%,color-mix(in srgb,var(--tc) 60%,transparent) 0,transparent 220px)!important}

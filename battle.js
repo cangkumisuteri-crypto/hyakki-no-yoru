@@ -6,7 +6,7 @@
   const B = { on: false, speedMul: 1 };
   let U = { a: [], e: [] }, ki = 2, KI_MAX = 6, round = 0, waveIdx = 0, stage = null, speed = 1, auto = false, ended = false, revived = false, cur = null, opts = null, choose = null, tgtMode = null, tick = 0, stats = null, hintState = 0, summoned = false;
   const wait = (ms) => new Promise((r) => setTimeout(r, window.__fast ? 1 : ms / speed));
-  B.setSpeed = function (v) { speed = v; S.d.set.speed = v; refreshTop(); };
+  B.setSpeed = function (v) { speed = v; if (window.Stage) Stage.setSpeed(v); S.d.set.speed = v; refreshTop(); };
   B.setAuto = function (v) { auto = v; S.d.set.auto = v; refreshTop(); if (v && choose) autoPlay(); };
 
   /* ---------- unit creation ---------- */
@@ -24,14 +24,14 @@
 
   /* ---------- DOM cards ---------- */
   function cardHtml(u) {
-    return '<div class="c-img" style="background-image:url(' + ART(u.img) + ')"></div><div class="c-shade"></div>' +
-      '<div class="c-name">' + u.name + '</div><div class="c-bar"><i class="hp"></i><i class="sh"></i></div><div class="c-hp"></div>' +
-      (u.side === 'a' ? '<div class="c-ult"><i></i></div><div class="c-ultlab">奥義</div>' : '') + '<div class="c-st"></div><div class="c-mark"></div>';
+    return '<div class="c-shadow"></div><div class="c-spr"><div class="c-img" style="background-image:url(' + ART(u.img) + ')"></div><div class="c-rim"></div></div>' +
+      '<div class="c-plate"><div class="c-name">' + u.name + '</div><div class="c-hp"></div><div class="c-bar"><i class="hp"></i><i class="sh"></i></div>' +
+      (u.side === 'a' ? '<div class="c-ult"><i></i></div><div class="c-ultlab">奥義</div>' : '') + '</div><div class="c-st"></div><div class="c-mark"></div>';
   }
   function buildCard(u, parent) {
     const el = document.createElement('div'); el.className = 'card ' + (u.side === 'a' ? 'ally' : 'enemy') + (u.boss ? ' boss' : ''); el.innerHTML = cardHtml(u);
     el.style.setProperty('--col', u.col); u.el = el; parent.appendChild(el);
-    el.addEventListener('click', () => onCardTap(u)); updateCard(u); return el;
+    el.addEventListener('click', () => onCardTap(u)); updateCard(u); if (window.Stage) Stage.add(u); return el;
   }
   function updateCard(u) {
     const el = u.el; if (!el) return; const p = Math.max(0, u.hp / u.maxHp);
@@ -90,22 +90,23 @@
     let dmg = atk * mult * rnd(0.93, 1.07) * (1 - def / (def + 60)); if (crit) dmg *= 1.5; if (tg.guard) dmg *= 0.5;
     return Math.max(1, Math.round(dmg));
   }
-  async function hurt(att, tg, dmg, crit) {
+  async function hurt(att, tg, dmg, crit, pw) {
     if (!tg.alive) return; let d = dmg;
     if (tg.shield > 0) { const ab = Math.min(tg.shield, d); tg.shield -= ab; d -= ab; if (ab) pop(tg, T('結界', 'BARRIER'), 'st shield', -30); }
     tg.hp -= d; updateCard(tg);
     pop(tg, '' + dmg, crit ? 'dmg crit' : (tg.guard ? 'dmg guard' : 'dmg'));
     tg.el.classList.remove('hit'); void tg.el.offsetWidth; tg.el.classList.add('hit');
+    if (window.Stage) { Stage.hit(tg, att, pw || (crit ? 400 : 250)); if (crit || pw > 380) Stage.hitstop(0.07); }
     if (tg.side === 'a') { tg.ult = Math.min(100, tg.ult + 9); updateCard(tg); }
     if (stats) { if (att && att.side === 'a') stats.dealt += dmg; else stats.taken += dmg; }
     if (tg.hp <= 0) await kill(tg);
   }
   async function kill(u) {
     u.hp = 0; u.alive = false; u.st = []; u.charged = false; updateCard(u); A.die(); const c = center(u); FX.play('death', c.x, c.y);
-    u.el.classList.add('dying'); await wait(450);
+    u.el.classList.add('dying'); if (window.Stage) Stage.hit(u, cur && cur !== u ? cur : null, 520); await wait(450);
     if (u.side === 'e' && u.el && !u.boss) u.el.classList.add('gone');
   }
-  function shake(big) { const a = $('app'); a.classList.remove('shake', 'shakeBig'); void a.offsetWidth; a.classList.add(big ? 'shakeBig' : 'shake'); setTimeout(() => a.classList.remove('shake', 'shakeBig'), 500); }
+  function shake(big) { if (window.Stage) Stage.shake(big ? 0.85 : 0.45); }
   const sfx = { thunder: 'thunder', thunderBig: 'thunder', fire: 'fire', fireBig: 'fire', ice: 'ice', iceBig: 'ice', wind: 'wind', windBig: 'wind', water: 'water', claw: 'claw', slash: 'slash', slashBig: 'slash', hit: 'hit', bell: 'bell', crush: 'crush' };
 
   /* ---------- skill execution ---------- */
@@ -121,7 +122,8 @@
       default: return [u];
     }
   }
-  async function useSkill(u, sk, target) {
+  async function useSkill(u, sk, target) { try { await useSkill0(u, sk, target); } finally { if (window.Stage) Stage.recover(u); } }
+  async function useSkill0(u, sk, target) {
     const isA = u.side === 'a'; const foes = isA ? alive('e') : alive('a');
     // cost / gain
     if (isA) {
@@ -131,18 +133,19 @@
     }
     updateCard(u);
     const nameTxt = sk.n ? L(sk.n) : '';
-    if (sk.ultimate) await cutIn(u, sk); else if (isA || sk.big || sk.charge || sk.summon) { banner(nameTxt, '', isA ? 'skill' : 'foe'); }
+    if (sk.ultimate) { if (window.Stage) Stage.focus(u, 1.3); await cutIn(u, sk); } else if (isA || sk.big || sk.charge || sk.summon) { banner(nameTxt, '', isA ? 'skill' : 'foe'); }
     if (sk.guard) { u.guard = true; u.el.classList.add('guarding'); A.guard(); pop(u, T('防御', 'GUARD'), 'st guard', -30); FX.play('buff', center(u).x, center(u).y); await wait(420); return; }
     if (sk.charge) { u.charged = true; updateCard(u); A.warn(); shake(false); hint(T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); FX.flash('#ff62d8', 0.25, 0.4); await wait(900); hint(''); return; }
     if (sk.summon) { await summon(u, sk.summon); return; }
-    u.el.classList.add(isA ? 'lungeA' : 'lungeE'); setTimeout(() => u.el.classList.remove('lungeA', 'lungeE'), 420);
+    const lunTs = sk.tgt === 'rand' ? null : pickTargets(u, sk, target);
+    if (window.Stage) Stage.act(u, sk, lunTs || foes);
     await wait(150);
     // heals
     if (sk.heal) {
-      const ts = pickTargets(u, sk, target); A.heal();
+      const ts = lunTs || pickTargets(u, sk, target); A.heal();
       for (const t of ts) {
         if (!t.alive) continue; const amt = Math.round(u.atk * sk.heal + t.maxHp * 0.1); t.hp = Math.min(t.maxHp, t.hp + amt); updateCard(t);
-        pop(t, '+' + amt, 'heal'); const c = center(t); FX.play(sk.fx || 'heal', c.x, c.y);
+        pop(t, '+' + amt, 'heal'); const c = center(t); FX.play(sk.fx || 'heal', c.x, c.y); if (window.Stage) Stage.pulse(sk.fx || 'heal');
         if (sk.cleanse) { t.st = t.st.filter((s) => !D.STATUS[s.t].bad); updateCard(t); }
         if (sk.shield) { t.shield += Math.round(t.maxHp * sk.shield); updateCard(t); }
         if (sk.allySt) sk.allySt.forEach((d) => { addStatus(t, d.t, d.turns, d.val, false); });
@@ -154,7 +157,7 @@
     // damage
     const hits = sk.hits || [1]; const critUp = sk.critUp || 0;
     if (sk.fx && sfx[sk.fx]) A[sfx[sk.fx]]();
-    let fixedTs = sk.tgt === 'rand' ? null : pickTargets(u, sk, target);
+    let fixedTs = sk.tgt === 'rand' ? null : lunTs;
     for (let h = 0; h < hits.length; h++) {
       if (ended) break;
       let ts = fixedTs; if (!ts) { const pool = (has(u, 'charm') ? alive(u.side).filter((x) => x !== u) : (isA ? alive('e') : alive('a'))); ts = pool.length ? [pool[Math.floor(Math.random() * pool.length)]] : []; }
@@ -163,8 +166,8 @@
       let anyCrit = false;
       for (const t of ts) {
         const crit = Math.random() < (u.crit + critUp), dmg = calcDmg(u, t, hits[h], sk, crit); if (crit) anyCrit = true;
-        const c = center(t); FX.play(sk.fx || 'hit', c.x, c.y); if (crit) FX.flash('#fff', 0.25, 0.12);
-        await hurt(u, t, dmg, crit);
+        const c = center(t); FX.play(sk.fx || 'hit', c.x, c.y); if (crit) FX.flash('#fff', 0.25, 0.12); if (window.Stage) Stage.pulse(sk.fx || 'hit');
+        await hurt(u, t, dmg, crit, sk.ultimate ? 520 : (sk.big ? 400 : 0));
         if (t.alive && h === hits.length - 1 && sk.st) sk.st.forEach((d) => tryStatus(u, t, d));
         if (u.side === 'a' && sk.pierce == null && false) {}
       }
@@ -179,7 +182,7 @@
   }
   async function summon(u, key) {
     A.bellBig(); FX.flash('#ff62d8', 0.3, 0.4); let n = 0;
-    while (alive('e').length < 3 && n < 2) { const e = mkEnemy(key, stage.lv, U.e.length); U.e.push(e); buildCard(e, $('bEn')); e.el.classList.add('spawn'); n++; await wait(300); }
+    while (alive('e').length < 3 && n < 2) { const e = mkEnemy(key, stage.lv, U.e.length); U.e.push(e); buildCard(e, $('bEn')); e.el.classList.add('spawn'); if (window.Stage) Stage.layout(); n++; await wait(300); }
     await wait(300);
   }
   async function cutIn(u, sk) {
@@ -280,10 +283,10 @@
 
   /* ---------- wave / battle loop ---------- */
   function spawnWave() {
-    const w = stage.waves[waveIdx]; const pe = $('bEn'); pe.innerHTML = ''; U.e = [];
+    const w = stage.waves[waveIdx]; const pe = $('bEn'); pe.innerHTML = ''; U.e = []; if (window.Stage) Stage.clearSide('e');
     pe.className = 'b-enemies n' + w.length + (w.some((k) => D.ENEMIES[k].boss) ? ' hasboss' : '');
     w.forEach((k, i) => { const e = mkEnemy(k, stage.lv, i); U.e.push(e); const el = buildCard(e, pe); el.classList.add('spawn'); });
-    refreshTop(); renderTimeline();
+    if (window.Stage) Stage.layout(); refreshTop(); renderTimeline();
   }
   async function loop() {
     let boss = stage.waves.some((w) => w.some((k) => D.ENEMIES[k].boss));
@@ -329,7 +332,7 @@
     const ids = S.d.party.filter((id) => S.d.chars[id].own);
     U = { a: ids.map((id, i) => mkAlly(id, i)), e: [] };
     $('bg').style.backgroundImage = 'url(' + ART(stage.bg) + ')'; $('bEn').innerHTML = ''; $('bPa').innerHTML = ''; $('bCmd').innerHTML = ''; $('bCmd').classList.add('off'); $('bTl').innerHTML = '';
-    FX.clear(); U.a.forEach((a) => buildCard(a, $('bPa'))); $('bPa').className = 'b-party n' + U.a.length;
+    FX.clear(); if (window.Stage) { Stage.begin(stage); Stage.setSpeed(speed); } U.a.forEach((a) => buildCard(a, $('bPa'))); $('bPa').className = 'b-party n' + U.a.length;
     const mealKi = S.d.buff && S.d.buff.left > 0 && D.DISHES[S.d.buff.dish].buff.ki || 0; KI_MAX = 6; setKi(2 + mealKi);
     spawnWave(); refreshTop(); if (window.Ads) Ads.gameplayStart();
     loop();

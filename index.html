@@ -37,12 +37,24 @@
 
   <!-- BATTLE -->
   <section id="s-battle" class="screen">
+    <!-- 2.5D depth stage: parallax layers, ground plane, fog, lanterns; actors are the DOM cards inside #bEn / #bPa -->
+    <div id="world">
+      <div class="pl dof" id="wFar" data-d=".3"><div class="trees"></div></div>
+      <div id="wLight"></div>
+      <div class="pl" id="wFogA" data-d=".45"><div class="fogband"></div></div>
+      <div class="pl" id="wGround" data-d=".85"><div class="gclip"><div class="plane"></div></div></div>
+      <div class="b-enemies" id="bEn"></div>
+      <div class="pl" id="wFogB" data-d="1"><div class="fogband"></div></div>
+      <div class="b-party" id="bPa"></div>
+      <div class="pl" id="wFogC" data-d="1.35"><div class="fogband"></div></div>
+      <div class="pl dof" id="wFore" data-d="1.55"></div>
+      <canvas id="cvAmb"></canvas>
+      <div id="wVig"></div>
+    </div>
     <div class="b-top"><div id="bWave"></div><div class="b-tools"><button id="bAuto" class="tool">AUTO</button><button id="bSpd" class="tool">×1</button><button id="bRet" class="tool">⏏</button></div></div>
     <div class="b-tl" id="bTl"></div>
-    <div class="b-enemies" id="bEn"></div>
     <div class="b-hint" id="bHint"></div>
     <div class="b-ki" id="bKi"></div>
-    <div class="b-party" id="bPa"></div>
     <div class="b-cmd" id="bCmd"></div>
     <div class="banner" id="bBanner"></div>
     <div class="cutin" id="cutin"></div>
@@ -69,6 +81,7 @@
 <script src="ads.js"></script>
 <script src="state.js"></script>
 <script src="fx.js"></script>
+<script src="stage25.js"></script>
 <script src="battle.js"></script>
 <script src="ui.js"></script>
 <script src="main.js"></script>

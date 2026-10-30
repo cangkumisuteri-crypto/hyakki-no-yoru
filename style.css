@@ -135,8 +135,6 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 #bWave{font-family:var(--serif);letter-spacing:.06em;text-shadow:0 2px 6px #000}.b-tools{display:flex;gap:8px}.tool{background:rgba(0,0,0,.6);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:17px;font-weight:700;min-width:62px}.tool.on{background:var(--crim);border-color:var(--gold)}
 .b-tl{position:absolute;left:18px;top:60px;display:flex;gap:6px;z-index:3}
 .tl{width:38px;height:38px;border-radius:50%;background-size:cover;background-position:center 18%;border:3px solid #6fa8ff;opacity:.85}.tl.e{border-color:#ff6a7a}.tl.first{width:50px;height:50px;opacity:1;box-shadow:0 0 14px #fff;margin-top:-6px}
-.b-enemies{position:absolute;left:0;right:0;top:104px;height:350px;display:flex;justify-content:center;align-items:center;gap:20px}
-.b-party{position:absolute;left:20px;top:500px;display:flex;gap:8px}
 .b-ki{position:absolute;left:720px;top:496px;display:flex;align-items:center;gap:8px;font-weight:900}.b-ki .kl{color:var(--gold);font-size:18px;letter-spacing:.2em;margin-right:6px}.b-ki i{width:26px;height:26px;transform:rotate(45deg);background:rgba(255,255,255,.1);border:2px solid rgba(232,195,106,.5);transition:all .2s}.b-ki i.on{background:linear-gradient(#fff2b0,#e8a43a);box-shadow:0 0 12px #ffc94a;border-color:#fff2b0}
 .b-cmd{position:absolute;left:720px;top:540px;width:540px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.b-cmd.off{opacity:.3;pointer-events:none}
 .cmd{height:78px;padding:6px 12px;text-align:left;background:linear-gradient(#2b2142,#150f26);border:2px solid var(--line);border-radius:10px;position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
@@ -146,33 +144,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 @keyframes ultp{50%{box-shadow:0 0 34px rgba(255,150,100,1)}}
 .b-hint{position:absolute;left:50%;top:462px;transform:translateX(-50%);max-width:620px;background:rgba(0,0,0,.82);border:1px solid var(--gold);border-radius:30px;padding:7px 24px;font-size:19px;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:6}.b-hint.on{opacity:1}
 /* cards */
-.card{position:relative;width:158px;height:206px;border-radius:12px;overflow:hidden;border:3px solid var(--col,#fff);background:#000;transition:transform .18s,box-shadow .18s,opacity .5s,filter .4s;flex:none;cursor:default;box-shadow:0 6px 18px rgba(0,0,0,.7)}
-.card .c-img{position:absolute;inset:0;background-size:cover;background-position:center 20%}
-.card .c-shade{position:absolute;left:0;right:0;bottom:0;height:62%;background:linear-gradient(transparent,rgba(0,0,0,.92))}
-.card .c-name{position:absolute;left:8px;right:8px;bottom:50px;font-size:17px;font-weight:800;text-shadow:0 2px 4px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--serif)}
-.card .c-bar{position:absolute;left:8px;right:8px;bottom:30px;height:11px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.35);border-radius:6px;overflow:hidden}
-.card .c-bar .hp{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#7aff9a,#1fa84a);transition:width .35s}.card .c-bar .hp.low{background:linear-gradient(#ff8a7a,#c0261a)}.card .c-bar .sh{position:absolute;left:0;top:0;height:4px;background:#e8e0ff}
-.card .c-hp{position:absolute;right:10px;bottom:42px;font-size:12px;font-weight:800;text-shadow:0 1px 3px #000;display:none}
-.card.ally .c-hp{display:block;bottom:44px;font-size:11px;opacity:.9}.card.ally .c-name{bottom:58px;font-size:16px}.card.ally .c-bar{bottom:38px}
-.card .c-ult{position:absolute;left:8px;right:8px;bottom:22px;height:7px;background:rgba(0,0,0,.7);border:1px solid rgba(255,200,120,.4);border-radius:4px;overflow:hidden}.card .c-ult i{display:block;height:100%;background:linear-gradient(90deg,#ff9a3d,#ffe27a);width:0;transition:width .3s}
-.card .c-ultlab{position:absolute;left:8px;bottom:5px;font-size:11px;font-weight:800;color:#ffd9a0;letter-spacing:.1em}
-.card.ultrdy{animation:ultglow 1s infinite}.card.ultrdy .c-ultlab{color:#fff}
-@keyframes ultglow{50%{box-shadow:0 0 28px #ffb05a,0 6px 18px rgba(0,0,0,.7)}}
-.card .c-st{position:absolute;left:5px;top:5px;display:flex;gap:3px;flex-wrap:wrap;max-width:90%}.card .c-st b{width:22px;height:22px;border-radius:50%;font-size:12px;color:#000;text-align:center;line-height:22px;font-family:var(--serif);border:1px solid #fff}
-.card .c-mark{position:absolute;left:0;right:0;top:36%;text-align:center}.card .c-mark span{display:inline-block;background:#d0248a;color:#fff;font-weight:900;padding:3px 12px;border-radius:6px;font-size:19px;animation:blink .6s infinite;border:2px solid #fff}
 @keyframes blink{50%{opacity:.5}}
-.card.enemy{width:196px;height:262px;border-color:#a8505e}.card.enemy .c-name{bottom:34px;font-size:19px}.card.enemy .c-bar{bottom:16px}
-.card.boss{width:270px;height:350px;border-color:#ff62d8;box-shadow:0 0 36px rgba(255,98,216,.55),0 8px 24px #000}.card.boss .c-name{font-size:25px;bottom:36px}.card.boss .c-bar{height:15px;bottom:14px}
-.card.charged{animation:chg .5s infinite}@keyframes chg{50%{box-shadow:0 0 50px #ff3a9a,0 0 20px #fff}}
-.card.active{transform:translateY(-14px) scale(1.05);box-shadow:0 0 26px var(--col),0 10px 24px #000;z-index:2}.card.enemy.active{transform:scale(1.06);box-shadow:0 0 26px #ff5a6a}
-.card.guarding{border-color:#8fc8ff!important;box-shadow:0 0 22px #6fb0ff,inset 0 0 20px rgba(110,170,255,.6)}
-.card.tgt{cursor:pointer;animation:tgtp .7s infinite;z-index:3}@keyframes tgtp{50%{transform:scale(1.07);box-shadow:0 0 30px #ffe27a}}
-.card.hit .c-img{animation:hitf .35s}.card.hit{animation:hitsh .35s}
-@keyframes hitf{0%{filter:brightness(3) saturate(0)}100%{filter:none}}@keyframes hitsh{20%{translate:-8px 0}50%{translate:7px 0}80%{translate:-3px 0}}
-.card.lungeA{animation:lunA .42s}.card.lungeE{animation:lunE .42s}@keyframes lunA{40%{translate:0 -44px;scale:1.1}100%{translate:0 0}}@keyframes lunE{40%{translate:0 40px;scale:1.1}100%{translate:0 0}}
-.card.dying{animation:dying .5s forwards}@keyframes dying{to{filter:brightness(3);opacity:0;transform:scale(.9)}}
-.card.dead{filter:grayscale(1) brightness(.4);opacity:.7}.card.gone{visibility:hidden}
-.card.spawn{animation:spawn .5s}@keyframes spawn{from{opacity:0;transform:translateY(-40px) scale(.85)}}
 .fl{position:absolute;transform:translate(-50%,-50%);font-weight:900;font-size:42px;color:#fff;text-shadow:0 0 6px #000,0 3px 0 #000,2px 0 0 #000,-2px 0 0 #000;white-space:nowrap;animation:fup 1s ease-out forwards;font-family:var(--sans)}
 .fl.crit{color:#ffd24a;font-size:62px;text-shadow:0 0 14px #ff7a1a,0 3px 0 #000,2px 0 0 #000,-2px 0 0 #000}.fl.guard{color:#9fc8ff;font-size:34px}.fl.heal{color:#8dffb0}.fl.burn{color:#ff9a4a;font-size:32px}
 .fl.st{font-size:26px;color:#ffe9a0}.fl.st.stun{color:#ffe14a}.fl.st.freeze{color:#8fefff}.fl.st.charm{color:#ff8ad0}.fl.st.guard{color:#9fc8ff}.fl.st.burn{color:#ff9a4a}
@@ -188,9 +160,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .port .ci-txt{left:44%}.port .ci-txt b{font-size:50px}.port .ci-img{width:200px;height:280px}.port .cutin{top:280px}
 
 /* ---------- portrait battle overrides ---------- */
-.port .b-enemies{top:116px;height:470px;gap:14px}.port .card.enemy{width:210px;height:280px}.port .card.boss{width:340px;height:450px}
 .port .b-hint{top:590px;max-width:680px;font-size:21px}
-.port .b-party{left:14px;top:640px;gap:6px}.port .card{width:169px;height:226px}
 .port .b-ki{left:20px;top:884px}
 .port .b-cmd{left:14px;top:934px;width:692px;gap:12px}.port .cmd{height:148px;padding:10px 16px}.port .cmd b{font-size:30px}.port .cmd small{font-size:19px}.port .cmd em{display:block;font-size:15px;margin-top:4px}
 .port .banner .b1{font-size:46px;padding:8px 30px}.port .banner.win .b1{font-size:80px}
@@ -213,3 +183,89 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .rs i{display:inline-flex;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;font-style:normal;font-family:var(--serif);font-size:19px;font-weight:900}
 .rs.gold i{background:linear-gradient(#ffe27a,#b8861e);color:#4a3000}.rs.gold i::before{content:"金"}
 .rs.mag i{background:linear-gradient(#b99aff,#5a30b8);color:#fff}.rs.mag i::before{content:"魂"}
+
+/* ---------- 2.5D battle stage ---------- */
+#s-battle{--hz:300px;--ptn:1}
+.port #s-battle{--hz:372px}
+#world{position:absolute;inset:0;z-index:0;isolation:isolate;overflow:hidden;--lit:0;--lo:0;--lc:#bcd0ff;pointer-events:none}
+#world .pl{position:absolute;inset:0;will-change:transform;transform-origin:50% 50%}
+#bg.bgdof{filter:blur(3px) brightness(.92) saturate(1.1);will-change:transform;transform-origin:50% 50%}
+#wFar{z-index:100}#wFar .trees{position:absolute;left:-6%;right:-6%;top:calc(var(--hz) - 270px);height:340px;background:url(w_trees.svg) 0 100%/auto 100% repeat-x;opacity:.92}
+.port #wFar .trees{top:calc(var(--hz) - 250px)}
+#world .dof{filter:blur(1.4px)}#wFore{z-index:2800;filter:blur(3.5px)!important;background:url(w_fore.svg) 0 0/100% 100% no-repeat;opacity:.96;inset:-4%}
+#wLight{position:absolute;inset:0;z-index:150;background:radial-gradient(ellipse at 50% 38%,var(--lc),transparent 75%);opacity:var(--lo)}
+.fogband{position:absolute;left:-50%;width:300%;background:radial-gradient(ellipse 50% 50% at 18% 55%,rgba(168,150,225,.34),transparent 70%),radial-gradient(ellipse 40% 45% at 52% 40%,rgba(140,125,205,.26),transparent 70%),radial-gradient(ellipse 45% 55% at 83% 60%,rgba(180,160,235,.3),transparent 70%);background-size:33.3333% 100%;background-repeat:repeat-x;animation:fogd 70s linear infinite}
+@keyframes fogd{to{transform:translateX(-33.3333%)}}
+#wFogA{z-index:200}#wFogA .fogband{top:calc(var(--hz) - 110px);height:220px;opacity:.75}
+#wFogB{z-index:2500}#wFogB .fogband{top:calc(var(--hz) + 70px);height:190px;opacity:.5;animation-duration:52s;animation-direction:reverse}
+#wFogC{z-index:4500}#wFogC .fogband{bottom:-4%;height:150px;top:auto;opacity:.38;animation-duration:38s}
+.port #wFogB .fogband{top:calc(var(--hz) + 120px)}
+#wGround{z-index:300}#wGround .gclip{position:absolute;left:-12%;right:-12%;top:var(--hz);bottom:0;overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 26%);mask-image:linear-gradient(transparent,#000 26%)}
+#wGround .plane{position:absolute;left:-40%;right:-40%;bottom:-18%;height:230%;transform-origin:50% 100%;transform:perspective(640px) rotateX(71deg);
+ background:linear-gradient(90deg,rgba(190,165,255,.3) 0 3px,transparent 3px) 0 0/150px 150px,linear-gradient(0deg,rgba(190,165,255,.3) 0 3px,transparent 3px) 0 0/150px 150px,
+ radial-gradient(ellipse at 50% 55%,rgba(104,72,150,.5),rgba(34,22,58,.92) 62%,#0b0714)}
+.prop{position:absolute;left:0;top:0;transform-origin:50% 50%;will-change:transform;pointer-events:none}
+.ring{width:640px;height:640px;margin:0;z-index:400;border-radius:50%}
+.ring .rr{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(232,195,106,.55);box-shadow:0 0 30px rgba(232,195,106,.35),inset 0 0 50px rgba(232,195,106,.18);transform:scaleY(.26)}
+.ring .rg{position:absolute;inset:7%;transform:scaleY(.26)}
+.ring .rg i{position:absolute;inset:0;border-radius:50%;animation:spin 40s linear infinite;background:repeating-conic-gradient(from 0deg,rgba(232,195,106,.3) 0 2deg,transparent 2deg 18deg);-webkit-mask-image:radial-gradient(circle,transparent 58%,#000 60%);mask-image:radial-gradient(circle,transparent 58%,#000 60%)}
+.ring.e .rr{border-color:rgba(255,98,150,.5);box-shadow:0 0 30px rgba(255,60,120,.35),inset 0 0 50px rgba(255,60,120,.18)}.ring.e .rg i{background:repeating-conic-gradient(from 0deg,rgba(255,98,150,.28) 0 2deg,transparent 2deg 18deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toro{width:100px;height:220px;z-index:500;background:url(w_toro.svg) 0 0/100% 100% no-repeat;filter:blur(.6px) brightness(.9)}
+.toro::before{content:"";position:absolute;left:-90px;right:-90px;bottom:-34px;height:90px;background:radial-gradient(ellipse at 50% 50%,rgba(255,170,70,.55),transparent 68%);animation:flk 2.3s infinite}
+.toro::after{content:"";position:absolute;left:14%;top:26%;width:72%;height:36%;background:radial-gradient(circle,rgba(255,190,90,.7),transparent 66%);animation:flk 1.7s infinite}
+@keyframes flk{0%,100%{opacity:.9}30%{opacity:.65}55%{opacity:1}80%{opacity:.75}}
+.hl{width:80px;height:300px;z-index:600}.hl.near{z-index:4600}
+.hl .sw{position:absolute;left:0;top:0;width:80px;height:100%;transform-origin:50% 0;animation:swing 4.6s ease-in-out infinite}
+.hl .str{position:absolute;left:39px;top:0;width:2px;height:var(--sl,120px);background:#1a1228}
+.hl .lamp{position:absolute;left:12px;top:var(--sl,120px);width:56px;height:70px;border-radius:50% / 40%;background:linear-gradient(90deg,#8a1c2a,#ff6a3a 45%,#ffb25a 55%,#8a1c2a);box-shadow:0 0 40px 16px rgba(255,130,60,.45),0 0 90px 30px rgba(255,110,50,.22);animation:flk 2.1s infinite}
+.hl .lamp::before,.hl .lamp::after{content:"";position:absolute;left:8px;right:8px;height:6px;background:#1a1228;border-radius:2px}.hl .lamp::before{top:-4px}.hl .lamp::after{bottom:-4px}
+.hl.near .lamp{filter:blur(2px)}
+@keyframes swing{0%,100%{transform:rotate(-3.2deg)}50%{transform:rotate(3.2deg)}}
+#cvAmb{position:absolute;left:0;top:0;width:100%;height:100%;z-index:4800;pointer-events:none}
+#wVig{position:absolute;inset:0;z-index:4900;background:radial-gradient(ellipse at 50% 46%,transparent 52%,rgba(4,2,10,.62) 100%)}
+#world.fx1 .dof,#world.fx1 .hl.near .lamp{filter:none}
+#world.fx1 #wFore{filter:none!important;opacity:.7}
+#world.fx2 #wFogC,#world.fx2 #wFore,#world.fx2 .hl.near,#world.fx2 #cvAmb,
+#world.fx2 .fogband{animation:none}#world.fx2 .c-rim,#world.fx2 .c-spr::before{display:none}#world.fx2 .c-img{filter:none!important}
+
+/* actors: depth-sorted standees. JS drives .card transform (ground position+scale) and .c-spr transform (idle/tilt/lunge) */
+.b-enemies,.b-party{position:absolute;inset:0;display:block;pointer-events:none}
+.card{position:absolute;left:0;top:0;width:158px;height:206px;transform-origin:50% 100%;pointer-events:auto;cursor:default;will-change:transform;--col:#fff}
+.port .card{width:169px;height:226px}
+.card.enemy{width:222px;height:296px;--rc:255,98,130}.port .card.enemy{width:210px;height:280px}
+.card.boss{width:270px;height:350px}.port .card.boss{width:340px;height:450px}
+.c-shadow{position:absolute;left:50%;bottom:-17px;width:104%;height:36px;margin-left:-52%;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.78),rgba(0,0,0,.4) 45%,transparent 72%);transform-origin:50% 50%;transition:opacity .4s}
+.c-shadow::after{content:"";position:absolute;inset:-6px -4px;border-radius:50%;background:radial-gradient(ellipse,transparent 55%,var(--col) 70%,transparent 78%);opacity:.0;transition:opacity .3s}
+.card.active .c-shadow::after{opacity:.9}
+.c-shadow::before{content:"";position:absolute;inset:6px 8%;border-radius:50%;background:radial-gradient(ellipse,var(--col),transparent 70%);opacity:.22}
+.c-spr{position:absolute;inset:0;transform-origin:50% 100%;will-change:transform}
+.c-spr::before{content:"";position:absolute;left:-12%;right:-12%;top:-8%;bottom:-4%;border-radius:50%;background:radial-gradient(ellipse,var(--col),transparent 66%);opacity:.26;transition:opacity .25s}
+.card.active .c-spr::before{opacity:.55}
+.c-img,.c-rim{position:absolute;inset:0;-webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 46%,#000 54%,transparent 100%);mask-image:radial-gradient(ellipse 62% 58% at 50% 46%,#000 54%,transparent 100%)}
+.c-img{background-size:cover;background-position:center 18%;filter:brightness(calc(1.04 + var(--lit,0)*.9)) saturate(calc(1.08 - var(--lit,0)*.3)) contrast(1.06)}
+.c-rim{background:linear-gradient(90deg,rgba(120,170,255,.62),transparent 20%,transparent 72%,rgba(255,150,70,.7)),linear-gradient(transparent 60%,rgba(0,0,0,.45));opacity:calc(.5 + var(--lit,0)*.5);mix-blend-mode:normal}
+.card.active .c-rim{opacity:1}
+.c-plate{position:absolute;left:-4px;right:-4px;top:100%;margin-top:6px;padding:3px 8px 4px;border-radius:9px;background:linear-gradient(rgba(14,9,26,.82),rgba(14,9,26,.55));border:1px solid rgba(var(--rc,150,170,255),.45)}
+.card.ally{--rc:140,170,255}.card.boss .c-plate{margin-top:10px}
+.c-name{font-size:16px;font-weight:800;text-shadow:0 2px 4px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--serif);line-height:1.15;padding-right:46px}
+.card.enemy .c-name{font-size:18px;padding-right:0;text-align:center}.card.boss .c-name{font-size:24px}
+.c-bar{position:relative;height:10px;margin-top:2px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.35);border-radius:6px;overflow:hidden}
+.card.boss .c-bar{height:14px}
+.c-bar .hp{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#7aff9a,#1fa84a);transition:width .35s}.c-bar .hp.low{background:linear-gradient(#ff8a7a,#c0261a)}.c-bar .sh{position:absolute;left:0;top:0;height:4px;background:#e8e0ff}
+.c-hp{position:absolute;right:9px;top:4px;font-size:11px;font-weight:800;text-shadow:0 1px 3px #000;display:none;opacity:.92}.card.ally .c-hp{display:block}
+.c-ult{position:relative;height:6px;margin-top:3px;background:rgba(0,0,0,.7);border:1px solid rgba(255,200,120,.4);border-radius:4px;overflow:hidden;margin-right:34px}.c-ult i{display:block;height:100%;background:linear-gradient(90deg,#ff9a3d,#ffe27a);width:0;transition:width .3s}
+.c-ultlab{position:absolute;right:8px;bottom:2px;font-size:11px;font-weight:800;color:#ffd9a0;letter-spacing:.06em}
+.card.ultrdy .c-ultlab{color:#fff;animation:blink .8s infinite}.card.ultrdy .c-plate{box-shadow:0 0 18px #ffb05a;border-color:#ffd070}
+.card.ultrdy .c-spr::before{opacity:.5;background:radial-gradient(ellipse,#ffb05a,transparent 66%)}
+.c-st{position:absolute;left:5px;top:5px;display:flex;gap:3px;flex-wrap:wrap;max-width:90%}.c-st b{width:22px;height:22px;border-radius:50%;font-size:12px;color:#000;text-align:center;line-height:22px;font-family:var(--serif);border:1px solid #fff}
+.c-mark{position:absolute;left:0;right:0;top:36%;text-align:center}.c-mark span{display:inline-block;background:#d0248a;color:#fff;font-weight:900;padding:3px 12px;border-radius:6px;font-size:19px;animation:blink .6s infinite;border:2px solid #fff}
+.card.charged .c-spr::before{opacity:.8;background:radial-gradient(ellipse,#ff3a9a,transparent 66%);animation:chg .5s infinite}@keyframes chg{50%{opacity:.35}}
+.card.guarding .c-spr::before{opacity:.8;background:radial-gradient(ellipse,#6fb0ff,transparent 66%)}
+.card.tgt{cursor:pointer}.card.tgt .c-spr{animation:tgtp .7s infinite}.card.tgt .c-spr::before{opacity:.8;background:radial-gradient(ellipse,#ffe27a,transparent 66%)}
+@keyframes tgtp{50%{scale:1.06}}
+.card.hit .c-img{animation:hitf .35s}@keyframes hitf{0%{filter:brightness(3) saturate(0)}100%{filter:brightness(.9) saturate(1.08)}}
+.card.dying .c-spr{animation:dying .55s forwards}@keyframes dying{to{filter:brightness(3);opacity:0;scale:.9}}
+.card.dying .c-shadow{opacity:0}.card.dying .c-plate{opacity:0;transition:opacity .3s}
+.card.dead .c-spr{filter:grayscale(1) brightness(.5);opacity:.75}.card.dead .c-plate{opacity:.55}.card.gone{visibility:hidden}
+.card.spawn .c-spr{animation:spawn .55s}@keyframes spawn{from{opacity:0;translate:0 -50px;scale:.85}}

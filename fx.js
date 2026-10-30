@@ -78,7 +78,7 @@
         if (p.shape === 'd') { cx.save(); cx.translate(p.x, p.y); cx.rotate((p.rot || 0) + p.life * 6); cx.beginPath(); cx.moveTo(0, -p.size); cx.lineTo(p.size * 0.5, 0); cx.lineTo(0, p.size); cx.lineTo(-p.size * 0.5, 0); cx.fill(); cx.restore(); }
         else { cx.beginPath(); cx.arc(p.x, p.y, p.size * (0.5 + a * 0.6), 0, 6.283); cx.fill(); }
       } else if (p.t === 'ring') {
-        const r = p.r0 + (p.r1 - p.r0) * (1 - Math.pow(1 - k, 3)); cx.globalAlpha = a; cx.strokeStyle = p.color; cx.lineWidth = p.w * a + 1; cx.beginPath(); cx.arc(p.x, p.y, r, 0, 6.283); cx.stroke();
+        const r = p.r0 + (p.r1 - p.r0) * (1 - Math.pow(1 - k, 3)); cx.globalAlpha = a; cx.strokeStyle = p.color; cx.lineWidth = p.w * a + 1; cx.beginPath(); cx.arc(p.x, p.y, Math.max(0.1, r), 0, 6.283); cx.stroke();
       } else if (p.t === 'slash') {
         const e = Math.min(1, k * 3.2), fade = k < 0.4 ? 1 : 1 - (k - 0.4) / 0.6; const dx = Math.cos(p.ang) * p.len / 2, dy = Math.sin(p.ang) * p.len / 2;
         const x0 = p.x - dx + dx * 2 * Math.max(0, e - 0.5) * 0, x1 = p.x - dx + dx * 2 * e, y1 = p.y - dy + dy * 2 * e;

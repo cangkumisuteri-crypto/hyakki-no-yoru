@@ -15,9 +15,23 @@
     app.style.width = UI.W + 'px'; app.style.height = UI.H + 'px';
     app.style.transform = 'translate(' + ((vw - UI.W * UI.scale) / 2) + 'px,' + ((vh - UI.H * UI.scale) / 2) + 'px) scale(' + UI.scale + ')';
     app.classList.toggle('port', UI.port); app.classList.toggle('land', !UI.port);
+    UI.safeArea(vw, vh);
     if (window.FX) FX.resize(UI.W, UI.H, UI.scale);
   };
+  /* notch / home-indicator insets -> design-space CSS vars (--sat/--sar/--sab/--sal) */
+  UI.safeArea = function (vw, vh) {
+    const app = $('app'); let pr = UI._sa;
+    if (!pr) { pr = UI._sa = document.createElement('div'); pr.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'; document.body.appendChild(pr); }
+    const cs = getComputedStyle(pr); let t = parseFloat(cs.paddingTop) || 0, r = parseFloat(cs.paddingRight) || 0, b = parseFloat(cs.paddingBottom) || 0, l = parseFloat(cs.paddingLeft) || 0;
+    const q = /[?&]sa=([\d.]+),([\d.]+),([\d.]+),([\d.]+)/.exec(location.search); if (q) { t = +q[1]; r = +q[2]; b = +q[3]; l = +q[4]; }
+    const ox = (vw - UI.W * UI.scale) / 2, oy = (vh - UI.H * UI.scale) / 2, k = UI.scale || 1;
+    const f = (v, o) => Math.max(0, Math.round((v - o) / k));
+    app.style.setProperty('--sat', f(t, oy) + 'px'); app.style.setProperty('--sab', f(b, oy) + 'px'); app.style.setProperty('--sar', f(r, ox) + 'px'); app.style.setProperty('--sal', f(l, ox) + 'px');
+  };
+  UI.haptic = function (p) { try { if (S.d && S.d.set && S.d.set.haptic === false) return; const n = Date.now(); if (n - (UI._hz || 0) < 35) return; UI._hz = n; if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
   UI.show = function (name) {
+    const prev = UI.screen, w = $('wipe');
+    if (w && prev !== name && UI._booted && !window.__fast && !/[?&]nowipe/.test(location.search)) { w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); clearTimeout(UI._wt); UI._wt = setTimeout(() => w.classList.remove('go'), 700); }
     UI.screen = name; document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === 's-' + name));
     $('app').dataset.screen = name;
     if (name === 'battle' || name === 'story') $('app').classList.add('immersive'); else $('app').classList.remove('immersive');
@@ -26,8 +40,10 @@
   UI.toast = function (msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('on'); void t.offsetWidth; t.classList.add('on'); clearTimeout(UI._tt); UI._tt = setTimeout(() => t.classList.remove('on'), 2200); };
 
   /* ---------- icons / formatting ---------- */
-  const ICO = { gold: '金', mag: '魂', rice: '米', herb: '菜', fish: '魚', weapon: '刀', armor: '鎧', charm: '守' };
-  const ico = (k) => '<span class="ib ' + k + '">' + (ICO[k] || '?') + '</span>';
+  const ICO = { gold: 'koban', mag: 'mag', rice: 'rice', herb: 'herb', fish: 'fish', weapon: 'weapon', armor: 'armor', charm: 'charm' };
+  const ico = (k) => '<span class="ib ' + k + '"><svg viewBox="0 0 48 48"><use href="#i-' + (ICO[k] || 'sparkle') + '"/></svg></span>';
+  UI.svg = (n, cls) => '<svg class="' + (cls || 'i') + '" viewBox="0 0 48 48"><use href="#i-' + n + '"/></svg>';
+  UI.starsHtml = (n, pop) => '<span class="stars' + (pop ? ' pop' : '') + '">' + [1, 2, 3].map((i) => '<svg class="' + (i <= n ? 'on' : 'off') + '" viewBox="0 0 48 48"><use href="#i-star"/></svg>').join('') + '</span>';
   UI.ico = ico;
   const ingName = (k) => L(D.ING[k]);
   UI.rewardHtml = function (list) {
@@ -72,26 +88,30 @@
   const compact = (arr) => arr.filter(Boolean);
 
   /* ---------- top bar ---------- */
-  UI.refreshRes = function () { $('rGold').textContent = S.d.gold; $('rMag').textContent = S.d.mag; };
+  UI.refreshRes = function () {
+    [['rGold', S.d.gold, 'rsGold'], ['rMag', S.d.mag, 'rsMag']].forEach((a) => { const e = $(a[0]), v = String(a[1]); if (e.textContent !== v) { const had = e.textContent !== '0' && e.textContent !== ''; e.textContent = v; if (had && UI.screen === 'hub') { const p = $(a[2]); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); } } });
+  };
 
   /* ---------- hub ---------- */
   UI.hub = function (tab, keepScroll) {
     if (tab) UI.tab = tab; UI.show('hub'); UI.refreshRes();
     const body = $('hubBody'), sc = keepScroll ? body.scrollTop : 0;
     const bgs = { journey: ['bg_forest', 0.55], party: ['bg_camp', 0.7], camp: ['bg_camp', 0.5] }[UI.tab]; UI.setBg(bgs[0], bgs[1]);
-    ({ journey: renderJourney, party: renderParty, camp: renderCamp })[UI.tab](body);
+    body.classList.toggle('map', UI.tab === 'journey');
+    ({ journey: (b) => (UI.renderMap || renderJourney)(b), party: renderParty, camp: renderCamp })[UI.tab](body);
     body.scrollTop = sc; renderNav();
-    A.music(UI.tab === 'camp' || UI.tab === 'party' ? 'camp' : 'title');
+    A.music(UI.tab === 'camp' || UI.tab === 'party' ? 'camp' : 'map');
   };
   function renderNav() {
     const badge = { journey: 0, party: D.CHAR_ORDER.filter((id) => S.d.chars[id].own && S.pendingBond(id)).length, camp: (S.chestReady() ? 1 : 0) + (S.d.quests ? S.questsDone() : 0) + (S.d.daily.claimed ? 0 : 1) + (S.restPending().mins >= 30 ? 1 : 0) };
-    const tabs = [['journey', '旅路', 'Journey', '旅'], ['party', '仲間', 'Party', '仲'], ['camp', '野営', 'Camp', '火']];
-    $('nav').innerHTML = tabs.map((t) => '<button class="nv ' + (UI.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '"><span class="nvg">' + t[3] + '</span><b>' + T(t[1], t[2]) + '</b>' + (badge[t[0]] ? '<i class="dot"></i>' : '') + '</button>').join('');
-    $('nav').querySelectorAll('.nv').forEach((b) => b.addEventListener('click', () => { A.tap(); UI.hub(b.dataset.t); }));
+    const tabs = [['journey', '旅路', 'Journey', 'torii'], ['party', '仲間', 'Party', 'oni'], ['camp', '野営', 'Camp', 'fire']];
+    $('nav').innerHTML = tabs.map((t) => '<button class="nv ' + (UI.tab === t[0] ? 'on' : '') + '" data-t="' + t[0] + '"><span class="ni"><svg viewBox="0 0 48 48"><use href="#i-' + t[3] + '"/></svg>' + (badge[t[0]] ? '<i class="dot"></i>' : '') + '</span><b>' + T(t[1], t[2]) + '</b></button>').join('');
+    $('nav').querySelectorAll('.nv').forEach((b) => b.addEventListener('click', () => { if (b.dataset.t === UI.tab) { UI.haptic(6); return; } A.tap(); UI.hub(b.dataset.t); }));
   }
 
   /* ----- Journey ----- */
   UI.selCh = 1;
+  UI._enemyList = (st) => enemyList(st);
   function enemyList(st) { const m = {}; st.waves.forEach((w) => w.forEach((k) => { m[k] = (m[k] || 0) + 1; })); return Object.keys(m).map((k) => L(D.ENEMIES[k].n) + '×' + m[k]).join(' / '); }
   function renderJourney(body) {
     const ch = D.CHAPTERS[UI.selCh - 1];
@@ -119,16 +139,21 @@
     const ids = S.d.party.filter((x) => S.d.chars[x].own);
     const fr = []; if (first) { const f = st.first; ['mag', 'rice', 'herb', 'fish'].forEach((k) => { if (f[k]) fr.push(ico(k) + (k === 'mag' ? T('魂玉', 'Soul Gem') : ingName(k)) + '×' + f[k]); }); fr.push(ico(st.drop.split('_')[0]) + T('装備', 'Gear')); }
     const eny = []; st.waves.forEach((w) => w.forEach((k) => { if (!eny.includes(k)) eny.push(k); }));
+    const stars = (S.d.stars && S.d.stars[id]) || (S.d.cleared[id] ? 1 : 0), lim = UI.roundLimit(id);
+    const goals = '<div class="sgoal"><div>' + UI.starsHtml(1) + T('勝利する', 'Win the battle') + '</div><div>' + UI.starsHtml(2) + T('全員が生き残る', 'Everyone survives') + '</div><div>' + UI.starsHtml(3) + T(lim + 'ラウンド以内にクリア', 'Clear within ' + lim + ' rounds') + '</div></div>';
     const pw = S.partyPower(), meal = S.d.buff && S.d.buff.left > 0 ? D.DISHES[S.d.buff.dish] : null;
     UI.modal({ cls: 'stagebox', title: id + '　' + L(st.n),
-      html: '<div class="enrow">' + eny.map((k) => '<div class="enchip' + (D.ENEMIES[k].boss ? ' boss' : '') + '" style="background-image:url(' + ART(D.ENEMIES[k].img) + ')"><b>' + esc(L(D.ENEMIES[k].n)) + '</b></div>').join('') + '</div>' +
+      html: '<div style="text-align:center">' + UI.starsHtml(stars) + '</div><div class="enrow">' + eny.map((k) => '<div class="enchip' + (D.ENEMIES[k].boss ? ' boss' : '') + '" style="background-image:url(' + ART(D.ENEMIES[k].img) + ')"><b>' + esc(L(D.ENEMIES[k].n)) + '</b></div>').join('') + '</div>' +
         '<div class="kv"><span>' + T('推奨Lv.', 'Rec. Lv.') + '</span><b>' + st.rec + '</b><span>' + T('戦力', 'Power') + '</span><b>' + pw + '</b></div>' +
         '<div class="kv"><span>' + T('報酬', 'Rewards') + '</span><b>' + ico('gold') + st.gold + ' / EXP ' + st.exp + '</b></div>' +
         (first ? '<div class="kv wide"><span>' + T('初回', 'First clear') + '</span><b>' + fr.join(' ') + '</b></div>' : '') +
         '<div class="pm">' + ids.map((x) => '<div class="pchip" style="background-image:url(' + ART(x) + ')"><i>Lv' + S.d.chars[x].lv + '</i></div>').join('') + '</div>' +
-        '<div class="meal">' + (meal ? T('料理効果: ', 'Meal: ') + L(meal.n) + ' (' + S.d.buff.left + T('戦', ' battles') + ')' : T('料理効果なし — 野営で料理を作ろう', 'No meal buff — cook at the camp')) + '</div>',
+        goals + '<div class="meal">' + (meal ? T('料理効果: ', 'Meal: ') + L(meal.n) + ' (' + S.d.buff.left + T('戦', ' battles') + ')' : T('料理効果なし — 野営で料理を作ろう', 'No meal buff — cook at the camp')) + '</div>',
       btns: [{ t: T('出陣', 'Fight!'), cls: 'pri', fn: () => { UI.startStage(id); } }, { t: T('編成', 'Party'), fn: () => { UI.hub('party'); } }, { t: T('閉じる', 'Close'), cls: 'sub' }] });
   };
+
+  UI.roundLimit = function (id) { const st = D.STAGES[id]; return 3 + 2 * st.waves.length; };
+  UI.calcStars = function (res, partySize) { if (!res.win) return 0; let n = 1; if (res.survivors >= partySize) { n = 2; if (res.rounds <= UI.roundLimit(res.id)) n = 3; } return n; };
 
   /* ----- Party ----- */
   UI.sel = 'mumei';
@@ -180,7 +205,7 @@
     const rp = S.restPending(), chestReady = S.chestReady(), meal = S.d.buff && S.d.buff.left > 0 ? D.DISHES[S.d.buff.dish] : null;
     let h = '<div class="campgrid">';
     h += '<div class="panel camp rest"><h4>' + T('焚き火', 'Campfire') + '</h4><p class="sm">' + T('休んでいる間も、仲間は力を蓄える(最大8時間)', 'Your party rests and gathers strength while you are away (up to 8h).') + '</p><div class="restrow">' + ico('gold') + rp.gold + ' <span class="exp">EXP ' + rp.exp + '</span> ' + (rp.rice ? ico('rice') + rp.rice : '') + (rp.herb ? ico('herb') + rp.herb : '') + (rp.fish ? ico('fish') + rp.fish : '') + '</div><div class="bar"><i style="width:' + (rp.mins / S.REST_CAP_MIN * 100) + '%"></i></div><small>' + rp.mins + T('分 / 480分', ' / 480 min') + (rp.full ? T('（満タン!）', ' (FULL!)') : '') + '</small><div class="btnrow"><button class="btn pri" id="btnRest" ' + (rp.mins < 1 ? 'disabled' : '') + '>' + T('受け取る', 'Collect') + '</button></div></div>';
-    h += '<div class="panel camp chest"><h4>' + T('宝箱', 'Spirit Chest') + '</h4><div class="chestg ' + (chestReady ? 'rdy' : '') + '">宝</div><p class="sm" id="chestT">' + (chestReady ? T('開けられる!', 'Ready to open!') : T('次の宝箱まで ', 'Next chest in ') + fmtT(S.d.chestAt - Date.now())) + '</p><div class="btnrow"><button class="btn pri" id="btnChest" ' + (chestReady ? '' : 'disabled') + '>' + T('開ける', 'Open') + '</button>' + (chestReady ? '' : '<button class="btn" id="btnChestGem">' + ico('mag') + '8 ' + T('今すぐ', 'Now') + '</button>') + '</div></div>';
+    h += '<div class="panel camp chest"><h4>' + T('宝箱', 'Spirit Chest') + '</h4><div class="chestg ' + (chestReady ? 'rdy' : '') + '" style="--cimg:url(ui/chest_gold.webp);--gl:rgba(255,206,60,.75)"><div class="cimg"></div></div><p class="sm" id="chestT">' + (chestReady ? T('開けられる!', 'Ready to open!') : T('次の宝箱まで ', 'Next chest in ') + fmtT(S.d.chestAt - Date.now())) + '</p><div class="btnrow"><button class="btn pri" id="btnChest" ' + (chestReady ? '' : 'disabled') + '>' + T('開ける', 'Open') + '</button>' + (chestReady ? '' : '<button class="btn" id="btnChestGem">' + ico('mag') + '8 ' + T('今すぐ', 'Now') + '</button>') + '</div></div>';
     h += '<div class="panel camp cook"><h4>' + T('料理', 'Cooking') + '</h4><div class="ings">' + ['rice', 'herb', 'fish'].map((k) => ico(k) + '<b>' + S.d.ing[k] + '</b>').join(' ') + '</div>' + (meal ? '<div class="mealnow">' + T('効果中: ', 'Active: ') + '<b>' + L(meal.n) + '</b> — ' + L(meal.d) + ' [' + S.d.buff.left + ']</div>' : '<p class="sm">' + T('料理で戦いを有利に。好物を振る舞うと絆も深まる', 'Meals boost your fights. Serving favorites deepens bonds.') + '</p>') + '<div class="dishes">' + Object.keys(D.DISHES).map((k) => { const d = D.DISHES[k]; return '<div class="dish ' + (S.canCook(k) ? '' : 'no') + '" data-k="' + k + '"><b>' + L(d.n) + '</b><small>' + L(d.d) + '</small><div class="needs">' + needHtml(d.need) + '</div><div class="favs">' + d.fav.filter((f) => S.d.chars[f].own).map((f) => '<i style="background-image:url(' + ART(f) + ')"></i>').join('') + '</div></div>'; }).join('') + '</div></div>';
     const talked = S.d.talked && S.d.talked.day === S.dayKey() ? S.d.talked.ids : [];
     h += '<div class="panel camp talk"><h4>' + T('語らい', 'Campfire Talk') + '</h4><p class="sm">' + T('1日1回、仲間と話して絆を深めよう (+4)', 'Talk to each companion once a day to grow your bond (+4).') + '</p><div class="talkrow">' + D.CHAR_ORDER.filter((id) => S.d.chars[id].own).map((id) => '<div class="tk ' + (talked.includes(id) ? 'done' : '') + '" data-id="' + id + '" style="background-image:url(' + ART(id) + ')"><i>' + (talked.includes(id) ? '✓' : '♥') + '</i></div>').join('') + '</div></div>';
@@ -194,7 +219,7 @@
     g('btnLogin', () => UI.loginModal());
     body.querySelectorAll('.dish').forEach((e) => e.addEventListener('click', () => UI.cookModal(e.dataset.k)));
     body.querySelectorAll('.tk').forEach((e) => e.addEventListener('click', () => UI.talk(e.dataset.id)));
-    body.querySelectorAll('.quest.rdy').forEach((e) => e.addEventListener('click', () => { const out = S.questClaim(e.dataset.id); if (out) { A.ok(); UI.modal({ title: T('日課達成', 'Quest complete'), html: UI.rewardHtml(out), btns: [{ t: 'OK', cls: 'pri', fn: () => UI.hub(null, true) }] }); } }));
+    body.querySelectorAll('.quest.rdy').forEach((e) => e.addEventListener('click', () => { const out = S.questClaim(e.dataset.id); if (out) { S.save && S.save(); UI.refreshRes(); A.ok(); UI.chestSequence({ out: out, title: T('日課達成', 'Quest complete'), onDone: () => UI.hub(null, true) }); } }));
     clearInterval(UI._chestIv);
     if (!chestReady) UI._chestIv = setInterval(() => { if (UI.tab !== 'camp' || UI.screen !== 'hub') { clearInterval(UI._chestIv); return; } if (S.chestReady()) { clearInterval(UI._chestIv); UI.hub(null, true); return; } const e = $('chestT'); if (e) e.textContent = T('次の宝箱まで ', 'Next chest in ') + fmtT(S.d.chestAt - Date.now()); }, 1000);
   }
@@ -207,15 +232,13 @@
       btns: compact([{ t: T('受け取る', 'Collect'), cls: 'pri', fn: (api) => { api.close(); claim(1)(); return false; } }, UI.adBtn(T('×2で受け取る', 'Collect ×2'), claim(2))]) });
   };
   UI.openChest = function () {
-    if (!S.chestReady()) return; S.d.chestAt = Date.now() + S.CHEST_MS; S.d.stats.chests++; S.quest('chest'); const rew = S.rollChest(false);
-    const doOpen = (rew2, again) => {
-      const m = UI.modal({ cls: 'chestbox', title: T('宝箱', 'Spirit Chest'), html: '<div class="chestanim shake">宝</div><div class="chestrw"></div>' });
-      A.chest(); setTimeout(() => { const out = S.grant(rew2); S.save(); UI.refreshRes(); m.el.querySelector('.chestanim').classList.remove('shake'); m.el.querySelector('.chestanim').classList.add('open'); m.el.querySelector('.chestrw').innerHTML = UI.rewardHtml(out); if (out.some((r) => r.k === 'item' && r.it.rar === 2) || out.some((r) => r.k === 'shard')) A.rare();
-        const bb = document.createElement('div'); bb.className = 'mbtns'; const b1 = document.createElement('button'); b1.className = 'btn pri'; b1.textContent = 'OK'; b1.onclick = () => { A.tap(); m.close(); UI.afterRewardFlow(); }; bb.appendChild(b1);
-        if (!again) { const ab = UI.adBtn(T('もう1つ開ける', 'Open another'), () => { m.close(); doOpen(S.rollChest(true), true); }); if (ab) { const e = document.createElement('button'); e.className = 'btn ' + ab.cls; e.innerHTML = ab.t; e.onclick = () => ab.fn({ close: () => {} , el: m.el }, e) && 0; e.onclick = () => { A.tap(); if (!Ads.rewardedAvailable()) { UI.toast(T('広告の準備中…', 'Ad cooling down…')); return; } e.disabled = true; Ads.rewarded().then((ok) => { e.disabled = false; if (ok) { S.d.stats.ads++; m.close(); doOpen(S.rollChest(true), true); } else UI.toast(T('広告を再生できませんでした', 'No ad available right now')); }); }; bb.appendChild(e); } }
-        m.el.appendChild(bb); }, 900);
+    if (!S.chestReady()) return; S.d.chestAt = Date.now() + S.CHEST_MS; S.d.stats.chests++; S.quest('chest');
+    const run = (rew, again) => {
+      const out = S.grant(rew); S.save(); UI.refreshRes();
+      UI.chestSequence({ out: out, title: T('宝箱', 'Spirit Chest'), onDone: () => UI.afterRewardFlow(),
+        extra: again ? [] : [UI.adBtn(T('もう1つ開ける', 'Open another'), () => run(S.rollChest(true), true))] });
     };
-    doOpen(rew, false);
+    run(S.rollChest(false), false);
   };
   UI.afterRewardFlow = function () { UI.hub(null, true); if (S.d.newRecruits && S.d.newRecruits.length) UI.recruitModals(); };
   UI.recruitModals = function () {
@@ -238,7 +261,7 @@
   UI.loginModal = function (auto) {
     const dly = S.d.daily, cur = dly.day % 7;
     const cells = D.LOGIN.map((r, i) => '<div class="lg ' + (i < cur || (i === cur && dly.claimed) ? 'got' : '') + (i === cur ? ' today' : '') + '"><small>' + T('Day ', 'Day ') + (i + 1) + '</small>' + Object.keys(r).map((k) => (k === 'item' ? ico(r[k].split('_')[0]) + '<em>' + r[k].split('_')[1].toUpperCase() + '</em>' : ico(k) + '<em>' + r[k] + '</em>')).join('') + '</div>').join('');
-    const claim = (mult) => () => { const out = S.loginClaim(mult); if (!out) return; A.chest(); UI.refreshRes(); UI.modal({ title: T('受け取り完了', 'Claimed') + (mult > 1 ? ' ×2' : ''), html: UI.rewardHtml(out), btns: [{ t: 'OK', cls: 'pri', fn: () => { if (UI.screen === 'hub') UI.hub(null, true); UI.afterWelcome && UI.afterWelcome(); } }] }); };
+    const claim = (mult) => () => { const day = S.d.daily.day % 7, out = S.loginClaim(mult); if (!out) return; UI.refreshRes(); UI.chestSequence({ out: out, tier: day === 6 ? 'legend' : day === 2 || day === 5 ? 'gold' : undefined, title: T('ログインボーナス', 'Daily Login') + (mult > 1 ? ' ×2' : ''), onDone: () => { if (UI.screen === 'hub') UI.hub(null, true); UI.afterWelcome && UI.afterWelcome(); } }); };
     UI.modal({ cls: 'login', title: T('ログインボーナス', 'Daily Login') + '  ·  ' + T(dly.streak + '日連続', dly.streak + '-day streak'), html: '<div class="lgrid">' + cells + '</div>',
       btns: dly.claimed ? [{ t: T('閉じる', 'Close'), cls: 'sub', fn: () => { UI.afterWelcome && UI.afterWelcome(); } }] : compact([{ t: T('受け取る', 'Claim'), cls: 'pri', fn: (api) => { api.close(); claim(1)(); return false; } }, UI.adBtn(T('×2で受け取る', 'Claim ×2'), claim(2))]) });
   };
@@ -246,12 +269,13 @@
   /* ---------- settings ---------- */
   UI.settings = function () {
     const set = S.d.set; const row = (id, label, on) => '<div class="srow"><span>' + label + '</span><button class="tg ' + (on ? 'on' : '') + '" id="' + id + '">' + (on ? 'ON' : 'OFF') + '</button></div>';
-    const m = UI.modal({ title: T('設定', 'Settings'), html: row('sSnd', T('効果音', 'Sound FX'), set.sound) + row('sMus', T('音楽', 'Music'), set.music) +
+    const m = UI.modal({ title: T('設定', 'Settings'), html: row('sSnd', T('効果音', 'Sound FX'), set.sound) + row('sMus', T('音楽', 'Music'), set.music) + row('sHap', T('振動', 'Haptics'), set.haptic !== false) +
       '<div class="srow"><span>' + T('言語', 'Language') + '</span><span><button class="tg ' + (I18N.lang === 'ja' ? 'on' : '') + '" id="sJa">日本語</button> <button class="tg ' + (I18N.lang === 'en' ? 'on' : '') + '" id="sEn">English</button></span></div>' +
       '<div class="srow"><span>' + T('セーブデータ', 'Save data') + '</span><button class="btn sm sub" id="sReset">' + T('削除', 'Delete') + '</button></div><p class="sm">' + T('進行はこのブラウザに自動保存されます。', 'Progress is saved automatically in this browser.') + '</p><p class="sm ver">HYAKKI NO YORU v1.0</p>', btns: [{ t: T('閉じる', 'Close'), cls: 'pri' }] });
     const q = (id) => m.el.querySelector('#' + id);
     q('sSnd').onclick = () => { set.sound = !set.sound; A.setMuted(!set.sound); S.save(); m.close(); UI.settings(); };
     q('sMus').onclick = () => { set.music = !set.music; A.setMusicOn(set.music); S.save(); m.close(); UI.settings(); };
+    q('sHap').onclick = () => { set.haptic = set.haptic === false; S.save(); if (set.haptic) UI.haptic(30); m.close(); UI.settings(); };
     q('sJa').onclick = () => { UI.setLang('ja'); m.close(); UI.settings(); }; q('sEn').onclick = () => { UI.setLang('en'); m.close(); UI.settings(); };
     q('sReset').onclick = () => { UI.modal({ title: T('本当に削除する?', 'Delete everything?'), html: '<p>' + T('全てのデータが消えます。', 'All progress will be erased.') + '</p>', btns: [{ t: T('削除する', 'Delete'), cls: 'pri', fn: () => { S.reset(); location.reload(); } }, { t: T('やめる', 'Cancel'), cls: 'sub' }] }); };
   };

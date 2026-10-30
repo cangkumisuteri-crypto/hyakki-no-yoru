@@ -11,4 +11,4 @@ Dark Japanese-folklore oni RPG for the browser (HTML5 / Canvas / plain JS). Play
 
 Ad simulation: on `github.io`, `localhost` and with `?adsim=1` the rewarded / midgame buttons show a fake 1.5 s ad overlay. Query flags: `?lang=en|ja`, `?debug=1`, `?nosw=1`, `?fx=full|mid|low`.
 
-Art: AI-generated. Audio: procedural WebAudio.
+Art: AI-generated (see CREDITS.md). Audio: fully procedural WebAudio. Fonts: Shippori Mincho, Yuji Boku, Cinzel (SIL OFL 1.1, bundled locally). See `CREDITS.md`.

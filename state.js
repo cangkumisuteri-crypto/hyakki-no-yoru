@@ -17,8 +17,8 @@
       chars: chars, items: [], party: ['mumei'], cleared: {}, seen: {}, tut: {}, flags: {},
       buff: null, chestAt: now, chestCount: 0, quests: null, daily: { last: null, day: 0, claimed: false, streak: 0 },
       stats: { battles: 0, wins: 0, ads: 0, cooks: 0, chests: 0, playSec: 0 },
-      set: { sound: true, music: true, speed: 1, auto: false, lang: null },
-      winStreak: 0,
+      set: { sound: true, music: true, haptic: true, speed: 1, auto: false, lang: null },
+      winStreak: 0, stars: {},
     };
   }
 

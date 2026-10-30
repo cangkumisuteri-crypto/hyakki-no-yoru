@@ -5,6 +5,7 @@
   const rnd = (a, b) => a + Math.random() * (b - a);
   const B = { on: false, speedMul: 1 };
   let U = { a: [], e: [] }, ki = 2, KI_MAX = 6, round = 0, waveIdx = 0, stage = null, speed = 1, auto = false, ended = false, revived = false, cur = null, opts = null, choose = null, tgtMode = null, tick = 0, stats = null, hintState = 0, summoned = false;
+  const waitR = (ms) => new Promise((r) => setTimeout(r, window.__fast ? 1 : ms));
   const wait = (ms) => new Promise((r) => setTimeout(r, window.__fast ? 1 : ms / speed));
   B.setSpeed = function (v) { speed = v; if (window.Stage) Stage.setSpeed(v); S.d.set.speed = v; refreshTop(); };
   B.setAuto = function (v) { auto = v; S.d.set.auto = v; refreshTop(); if (v && choose) autoPlay(); };
@@ -90,11 +91,23 @@
     let dmg = atk * mult * rnd(0.93, 1.07) * (1 - def / (def + 60)); if (crit) dmg *= 1.5; if (tg.guard) dmg *= 0.5;
     return Math.max(1, Math.round(dmg));
   }
+  let combo = 0, comboT = null;
+  function comboHit(att, tg) {
+    const el = $('bCombo'); if (!el) return;
+    if (!att || att.side !== 'a' || tg.side !== 'e') { if (att && att.side === 'e') comboReset(); return; }
+    combo++; if (comboT) clearTimeout(comboT); comboT = setTimeout(comboReset, 2600 / Math.max(1, speed * 0.75));
+    if (combo < 2) return;
+    el.innerHTML = '<b>' + combo + '</b><small>' + T('連撃', 'HITS') + '</small>'; el.className = 'on' + (combo >= 8 ? ' c3' : combo >= 4 ? ' c2' : '');
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); if (A.combo) A.combo(combo);
+  }
+  function comboReset() { combo = 0; if (comboT) { clearTimeout(comboT); comboT = null; } const el = $('bCombo'); if (el) el.className = 'out'; }
   async function hurt(att, tg, dmg, crit, pw) {
     if (!tg.alive) return; let d = dmg;
     if (tg.shield > 0) { const ab = Math.min(tg.shield, d); tg.shield -= ab; d -= ab; if (ab) pop(tg, T('結界', 'BARRIER'), 'st shield', -30); }
     tg.hp -= d; updateCard(tg);
-    pop(tg, '' + dmg, crit ? 'dmg crit' : (tg.guard ? 'dmg guard' : 'dmg'));
+    pop(tg, '' + dmg, crit ? 'dmg crit' : (tg.guard ? 'dmg guard' : 'dmg'), crit ? -20 : 0);
+    if (dmg > 0) { const cc = center(tg); FX.impact(cc.x, cc.y, { p: Math.min(2, dmg / Math.max(1, tg.maxHp * 0.16)), crit: crit, col: crit ? '#ffd24a' : '#ffd9a0' }); if (A.impact) A.impact(crit, Math.min(1, dmg / Math.max(1, tg.maxHp * 0.3))); }
+    comboHit(att, tg);
     tg.el.classList.remove('hit'); void tg.el.offsetWidth; tg.el.classList.add('hit');
     if (window.Stage) { Stage.hit(tg, att, pw || (crit ? 400 : 250)); if (crit || pw > 380) Stage.hitstop(0.07); }
     if (tg.side === 'a') { tg.ult = Math.min(100, tg.ult + 9); updateCard(tg); }
@@ -187,9 +200,20 @@
   }
   async function cutIn(u, sk) {
     const ci = $('cutin'); ci.style.setProperty('--col', u.col);
-    ci.innerHTML = '<div class="ci-band"></div><div class="ci-img" style="background-image:url(' + ART(u.img) + ')"></div><div class="ci-txt"><small>' + u.name + '</small><b>' + L(sk.n) + '</b></div>';
-    ci.classList.remove('on'); void ci.offsetWidth; ci.classList.add('on'); A.cutin(); FX.flash(u.col, 0.35, 0.3);
-    await wait(980); ci.classList.remove('on'); await wait(100);
+    ci.innerHTML = '<div class="ci-bg"></div><div class="ci-lines"></div><div class="ci-port"><i style="background-image:url(' + ART(u.img) + ')"></i></div><div class="ci-txt"><small>' + u.name + '</small><b>' + L(sk.n) + '</b></div><div class="ci-fl"></div>';
+    ci.classList.remove('on'); void ci.offsetWidth; ci.classList.add('on'); A.cutin(); FX.flash(u.col, 0.4, 0.3); hapt([20, 40, 40]);
+    if (window.Stage) Stage.shake(0.5);
+    await waitR(1250); ci.classList.remove('on'); await waitR(100);
+  }
+  function hapt(p) { if (window.UI && UI.haptic) UI.haptic(p); }
+  async function bossIntro(e) {
+    const bi = $('bossIn'); if (!bi) return;
+    bi.style.setProperty('--col', e.col || '#ff62d8');
+    bi.innerHTML = '<div class="bi-bg"></div><div class="bi-warn"><span>' + new Array(14).join('WARNING ▲ ') + '</span></div><div class="bi-warn b"><span>' + new Array(14).join('警告 ▼ ') + '</span></div><div class="bi-port"><i style="background-image:url(' + ART(e.img) + ')"></i></div><div class="bi-name"><small>' + T('鎮守の荒神', 'GUARDIAN GOD') + '</small><b>' + e.name + '</b></div><div class="bi-fl"></div>';
+    bi.classList.remove('on'); void bi.offsetWidth; bi.classList.add('on');
+    A.warn(); if (A.bossIntro) A.bossIntro(); hapt([40, 60, 40, 60, 120]); FX.flash('#ff62d8', 0.35, 0.5);
+    await waitR(700); if (window.Stage) Stage.shake(0.9); FX.flash('#fff', 0.5, 0.15); hapt([60]);
+    await waitR(1900); bi.classList.remove('on'); await waitR(120);
   }
 
   /* ---------- turn flow ---------- */
@@ -291,13 +315,13 @@
   async function loop() {
     let boss = stage.waves.some((w) => w.some((k) => D.ENEMIES[k].boss));
     A.music(stage.musicBoss ? 'boss' : 'battle');
-    banner(L(stage.n), T('第' + (waveIdx + 1) + '波', 'Wave ' + (waveIdx + 1)), 'wave'); await wait(1100);
+    if (U.e.some((e) => e.boss)) await bossIntro(U.e.find((e) => e.boss)); else { banner(L(stage.n), T('第' + (waveIdx + 1) + '波', 'Wave ' + (waveIdx + 1)), 'wave'); await wait(1100); }
     while (!ended) {
       const r = checkEnd();
       if (r === 'win') {
         waveIdx++; if (waveIdx >= stage.waves.length) { await finish(true); return; }
         await wait(400); hint(''); spawnWave(); const isBoss = U.e.some((e) => e.boss);
-        if (isBoss) { A.warn(); FX.flash('#ff62d8', 0.3, 0.5); banner(T('⚠ 鎮守の荒神 ⚠', '⚠ CHINJU NO ARAKAMI ⚠'), T('ボス出現', 'BOSS'), 'boss'); A.music('boss'); await wait(1600); }
+        if (isBoss) { A.music('boss'); await bossIntro(U.e.find((e) => e.boss) || U.e[0]); }
         else { banner(T('第' + (waveIdx + 1) + '波', 'Wave ' + (waveIdx + 1)), '', 'wave'); await wait(1000); }
         continue;
       }
@@ -332,7 +356,7 @@
     const ids = S.d.party.filter((id) => S.d.chars[id].own);
     U = { a: ids.map((id, i) => mkAlly(id, i)), e: [] };
     $('bg').style.backgroundImage = 'url(' + ART(stage.bg) + ')'; $('bEn').innerHTML = ''; $('bPa').innerHTML = ''; $('bCmd').innerHTML = ''; $('bCmd').classList.add('off'); $('bTl').innerHTML = '';
-    FX.clear(); if (window.Stage) { Stage.begin(stage); Stage.setSpeed(speed); } U.a.forEach((a) => buildCard(a, $('bPa'))); $('bPa').className = 'b-party n' + U.a.length;
+    FX.clear(); comboReset(); if (window.Stage) { Stage.begin(stage); Stage.setSpeed(speed); } U.a.forEach((a) => buildCard(a, $('bPa'))); $('bPa').className = 'b-party n' + U.a.length;
     const mealKi = S.d.buff && S.d.buff.left > 0 && D.DISHES[S.d.buff.dish].buff.ki || 0; KI_MAX = 6; setKi(2 + mealKi);
     spawnWave(); refreshTop(); if (window.Ads) Ads.gameplayStart();
     loop();

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>百鬼ノ夜 HYAKKI NO YORU</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="description" content="A dark Japanese-myth oni RPG. Gather yokai companions, cook, bond, and cut through the Night of a Hundred Demons. 百鬼夜行ダークファンタジーRPG。">
+<meta name="theme-color" content="#07050c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="land">
+  <div id="bg"></div><div id="bgShade"></div>
+
+  <!-- TITLE -->
+  <section id="s-title" class="screen">
+    <div class="embers" id="embers"></div>
+    <div class="logo"><div class="logo-ja">百鬼ノ夜</div><div class="logo-en">HYAKKI NO YORU</div><div class="logo-sub" id="tSub"></div></div>
+    <div class="title-btns" id="titleBtns"></div>
+    <div class="title-foot" id="titleFoot"></div>
+  </section>
+
+  <!-- HUB -->
+  <section id="s-hub" class="screen">
+    <header class="topbar">
+      <div class="res"><span class="rs gold"><i></i><b id="rGold">0</b></span><span class="rs mag"><i></i><b id="rMag">0</b></span></div>
+      <div class="top-r"><button class="ic" id="btnLang">言</button><button class="ic" id="btnSet">⚙</button></div>
+    </header>
+    <main id="hubBody"></main>
+    <nav class="nav" id="nav"></nav>
+  </section>
+
+  <!-- BATTLE -->
+  <section id="s-battle" class="screen">
+    <div class="b-top"><div id="bWave"></div><div class="b-tools"><button id="bAuto" class="tool">AUTO</button><button id="bSpd" class="tool">×1</button><button id="bRet" class="tool">⏏</button></div></div>
+    <div class="b-tl" id="bTl"></div>
+    <div class="b-enemies" id="bEn"></div>
+    <div class="b-hint" id="bHint"></div>
+    <div class="b-ki" id="bKi"></div>
+    <div class="b-party" id="bPa"></div>
+    <div class="b-cmd" id="bCmd"></div>
+    <div class="banner" id="bBanner"></div>
+    <div class="cutin" id="cutin"></div>
+  </section>
+
+  <!-- STORY -->
+  <section id="s-story" class="screen">
+    <div class="vn-flash" id="vnFlash"></div>
+    <div class="vn-p vn-l" id="vnL"></div><div class="vn-p vn-r" id="vnR"></div>
+    <button class="vn-skip" id="vnSkip">SKIP ≫</button>
+    <div class="vn-box" id="vnBox"><div class="vn-name" id="vnName"></div><div class="vn-text" id="vnText"></div><div class="vn-next">▼</div></div>
+  </section>
+
+  <canvas id="cvFx"></canvas><div id="fxLayer"></div>
+  <div id="modals"></div>
+  <div id="toast"></div>
+  <div id="fakeAd"><div id="fakeAdTxt"></div><div class="fa-bar"><i id="fakeAdBar"></i></div></div>
+</div>
+
+<script src="data.js"></script>
+<script src="story.js"></script>
+<script src="i18n.js"></script>
+<script src="audio.js"></script>
+<script src="ads.js"></script>
+<script src="state.js"></script>
+<script src="fx.js"></script>
+<script src="battle.js"></script>
+<script src="ui.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

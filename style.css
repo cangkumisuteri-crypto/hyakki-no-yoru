@@ -1,6 +1,8 @@
 :root{--gold:#e8c36a;--gold2:#a8802c;--crim:#b3263a;--crim2:#7a1426;--ink:#07050c;--panel:rgba(18,12,30,.88);--line:rgba(232,195,106,.45);--serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif CJK JP","Noto Serif JP",serif;--sans:system-ui,"Noto Sans CJK JP","Hiragino Sans","Yu Gothic",sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#030206;overflow:hidden;touch-action:manipulation;overscroll-behavior:none}
+body{position:fixed;inset:0;width:100%;-webkit-text-size-adjust:100%}
+textarea,input{-webkit-user-select:text;user-select:text}
 button{font-family:inherit;color:inherit;cursor:pointer}
 #app{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:var(--ink);font-family:var(--sans);color:#efe8ff;user-select:none;-webkit-user-select:none}
 #bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .3s}

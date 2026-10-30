@@ -12,7 +12,7 @@
     chars.mumei.path = 'oni';
     const now = Date.now();
     return {
-      v: 1, created: now, lastSeen: now, restAt: now, uid: 1,
+      v: VER, created: now, lastSeen: now, restAt: now, uid: 1,
       gold: 300, mag: 20, ing: { rice: 2, herb: 1, fish: 1 },
       chars: chars, items: [], party: ['mumei'], cleared: {}, seen: {}, tut: {}, flags: {},
       buff: null, chestAt: now, chestCount: 0, quests: null, daily: { last: null, day: 0, claimed: false, streak: 0 },
@@ -22,19 +22,104 @@
     };
   }
 
-  S.load = function () {
-    let d = null;
-    try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) { d = null; }
-    const f = fresh();
-    if (d && d.v === 1) { // shallow-merge defaults so new fields never crash
-      d = Object.assign(f, d);
-      D.CHAR_ORDER.forEach((id) => { d.chars[id] = Object.assign({ own: false, lv: 1, exp: 0, star: 0, shards: 0, bond: 0, eq: {}, seenBond: {} }, d.chars[id] || {}); });
-      d.set = Object.assign(f.set, d.set || {}); d.stats = Object.assign(f.stats, d.stats || {}); d.daily = Object.assign(f.daily, d.daily || {});
-    } else d = f;
-    S.d = d; return d;
+  /* ---------- save robustness ----------
+   * Keys: KEY (primary), KEY_bak (rolling copy, <=1 per 20 s), KEY_bad / KEY_bad2 (corrupt data set aside, never auto-deleted),
+   *       KEY_prev (copy of what an import / locked-reset replaced), KEY_pre<N> (copy taken before migrating from version N).
+   * Rules: data we cannot understand (newer version, corrupt) is NEVER overwritten: newer => this session runs unsaved (S.locked);
+   *        corrupt => raw text is copied to _bad first, then the rolling backup is tried. */
+  const VER = 1;                         // current save format version (the `v` field)
+  const BAK = KEY + '_bak', BAD = KEY + '_bad', BAD2 = KEY + '_bad2', PREV = KEY + '_prev';
+  let lastBak = 0, lastJs = null, failStreak = false;
+  /* migration chain: MIG[n] upgrades a version-n save object to version n+1 (mutate or return a new object).
+     Add MIG[1] = (d) => { ...; return d; } when VER becomes 2. v0 = legacy saves that have no `v` field. */
+  const MIG = { 0: (d) => d };
+  S.VER = VER; S.status = 'ok'; S.locked = null;     // status: ok | recovered | lost | newer | newgame ; locked: null | 'newer' | 'tab'
+  const ls = () => { try { return window.localStorage; } catch (e) { return null; } };
+  const lget = (k) => { try { const l = ls(); return l ? l.getItem(k) : null; } catch (e) { return null; } };
+  const lset = (k, v) => { try { const l = ls(); if (!l) return false; l.setItem(k, v); return true; } catch (e) { return false; } };
+  const ldel = (k) => { try { const l = ls(); if (l) l.removeItem(k); } catch (e) {} };
+  S.parse = function (raw) { // -> { d, from } | { err: 'parse' | 'shape' | 'newer', ver }
+    let d; try { d = JSON.parse(raw); } catch (e) { return { err: 'parse' }; }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return { err: 'shape' };
+    let v = d.v; if (v === undefined && (d.chars || d.gold !== undefined || d.cleared)) v = 0;
+    if (typeof v !== 'number' || !isFinite(v) || v < 0 || Math.floor(v) !== v) return { err: 'shape' };
+    if (v > VER) return { err: 'newer', ver: v };
+    const from = v;
+    try { while (v < VER) { const m = MIG[v]; if (!m) return { err: 'shape' }; d = m(d) || d; v++; d.v = v; } } catch (e) { return { err: 'shape' }; }
+    return { d: d, from: from };
   };
-  S.save = function () { try { S.d.lastSeen = Date.now(); localStorage.setItem(KEY, JSON.stringify(S.d)); } catch (e) {} };
-  S.reset = function () { try { localStorage.removeItem(KEY); } catch (e) {} S.load(); S.save(); };
+  const kind = (x) => (x === null ? 'null' : Array.isArray(x) ? 'array' : typeof x);
+  function normalize(d) { // keep the player's data, only repair fields whose TYPE is unusable so boot never throws
+    const f = fresh(), out = Object.assign(f, d);
+    Object.keys(f).forEach((k) => { const fk = kind(fresh()[k]); if (fk !== 'null' && kind(out[k]) !== fk) out[k] = fresh()[k]; });
+    if (!out.chars || typeof out.chars !== 'object') out.chars = {};
+    D.CHAR_ORDER.forEach((id) => { const c = out.chars[id]; out.chars[id] = Object.assign({ own: false, lv: 1, exp: 0, star: 0, shards: 0, bond: 0, eq: {}, seenBond: {} }, c && typeof c === 'object' ? c : {}); const cc = out.chars[id]; if (!cc.eq || typeof cc.eq !== 'object') cc.eq = {}; if (!cc.seenBond || typeof cc.seenBond !== 'object') cc.seenBond = {}; });
+    out.set = Object.assign(fresh().set, out.set); out.stats = Object.assign(fresh().stats, out.stats); out.daily = Object.assign(fresh().daily, out.daily);
+    out.ing = Object.assign(fresh().ing, out.ing); out.party = out.party.filter((id) => D.CHARS[id]); if (!out.party.length) out.party = ['mumei'];
+    if (out.buff && !(D.DISHES && D.DISHES[out.buff.dish])) out.buff = null;
+    return out;
+  }
+  function setAside(raw) { // keep a copy of unreadable data, newest in _bad, previous one in _bad2
+    if (!raw) return; const cur = lget(BAD); if (cur === raw) return; if (cur) lset(BAD2, cur); lset(BAD, raw);
+  }
+  S.load = function () {
+    S.status = 'ok'; S.locked = null; S.migratedFrom = null;
+    const raw = lget(KEY); let d = null, res = null;
+    if (raw !== null) {
+      res = S.parse(raw);
+      if (res.d) d = res.d;
+      else if (res.err === 'newer') { S.status = 'newer'; S.locked = 'newer'; S.foundVer = res.ver; }
+      else { setAside(raw); S.status = 'lost'; }
+    }
+    if (!d && !S.locked) { // primary missing or corrupt: the rolling backup is the safety net
+      const braw = lget(BAK);
+      if (braw !== null) { const r2 = S.parse(braw); if (r2.d) { d = r2.d; res = r2; if (raw !== null) S.status = 'recovered'; } else if (r2.err === 'newer') { S.status = 'newer'; S.locked = 'newer'; S.foundVer = r2.ver; } }
+    }
+    if (d && res && res.from < VER) { S.migratedFrom = res.from; lset(KEY + '_pre' + res.from, raw !== null ? raw : lget(BAK)); }
+    S.d = d ? normalize(d) : fresh();
+    if (!d && !S.locked && S.status === 'ok') S.status = 'newgame';
+    lastJs = null; return S.d;
+  };
+  S.save = function () {
+    if (S.locked) return false;
+    let js; try { S.d.lastSeen = Date.now(); js = JSON.stringify(S.d); } catch (e) { return false; }
+    const put = (withBak) => {
+      const l = ls(); if (!l) throw new Error('nostorage');
+      l.setItem(KEY, js); lastJs = js;
+      const t = Date.now(); if (withBak && t - lastBak > 20000) { lastBak = t; try { l.setItem(BAK, js); } catch (e) {} }
+    };
+    let ok = true;
+    try { put(true); } catch (e) {
+      /* quota full: free the disposable copies (rolling backup + error note) and retry. Set-aside corrupt data (_bad/_bad2) and _prev/_pre* are never deleted. */
+      try { ldel(BAK); ldel('hy_lasterr'); put(false); } catch (e2) { ok = false; }
+    }
+    if (ok) failStreak = false; else if (!failStreak) { failStreak = true; try { if (S.onSaveFail) S.onSaveFail(); } catch (e) {} }
+    return ok;
+  };
+  /* another tab wrote the save: stop writing in this tab so a stale copy can never overwrite it */
+  window.addEventListener('storage', (e) => {
+    if (e.storageArea && window.localStorage && e.storageArea !== window.localStorage) return;
+    if (e.key !== KEY && e.key !== null) return; if (e.newValue === lastJs || S.locked || !S.d) return;
+    S.locked = 'tab'; try { if (S.onLock) S.onLock('tab'); } catch (x) {}
+  });
+  S.reset = function () {
+    if (S.locked) { const raw = lget(KEY) || lget(BAK); if (raw) lset(PREV, raw); } /* never destroy data we could not read: keep a copy */
+    ldel(KEY); ldel(BAK); if (!S.locked && S.status !== 'lost') { ldel(BAD); ldel(BAD2); } /* set-aside corrupt data survives until the player has seen the warning */
+    S.locked = null; S.load(); S.save();
+  };
+  /* ---- export / import ---- */
+  S.exportJSON = function () { return JSON.stringify(S.d); };
+  S.hasBad = () => !!lget(BAD);
+  S.badRaw = () => lget(BAD) || '';
+  S.importJSON = function (text) { // validates fully, keeps a copy of what it replaces, then writes. returns {ok} | {ok:false, err}
+    text = String(text || '').trim(); if (!text) return { ok: false, err: 'empty' };
+    const r = S.parse(text); if (!r.d) return { ok: false, err: r.err };
+    const d = normalize(r.d); d.lastSeen = Date.now();
+    const cur = lget(KEY); if (cur) lset(PREV, cur); else if (S.d && !S.locked) lset(PREV, JSON.stringify(S.d));
+    let js; try { js = JSON.stringify(d); } catch (e) { return { ok: false, err: 'shape' }; }
+    if (!lset(KEY, js)) { ldel(BAK); if (!lset(KEY, js)) return { ok: false, err: 'write' }; }
+    lset(BAK, js); lastBak = Date.now(); S.locked = null; S.d = d; lastJs = js; return { ok: true };
+  };
   S.isNew = () => !S.d.seen.c1s1pre && Object.keys(S.d.cleared).length === 0;
 
   /* ---------- items ---------- */

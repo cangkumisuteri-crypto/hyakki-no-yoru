@@ -114,7 +114,8 @@
     const sp = $('splash'); if (!sp) return Promise.resolve();
     if (window.__fast || (/[?&]debug=1/.test(location.search) && !/[?&]splash=1/.test(location.search))) { sp.style.display = 'none'; return Promise.resolve(); }
     const bar = $('spBar'), land = innerWidth / innerHeight >= 1.05;
-    const imgs = ['bg_title.webp', 'mumei_oni.webp', 'raijin.webp', land ? 'ui/map_land.webp' : 'ui/map_port.webp', 'ui/chest_wood.webp', 'ui/chest_gold.webp', 'ui/washi.png'];
+    /* lite (iOS) devices only wait for the title art; everything else loads lazily per screen so decoded images never pile up */
+    const imgs = (window.HY && window.HY.lite) ? ['bg_title.webp', 'mumei_oni.webp', 'ui/washi.png'] : ['bg_title.webp', 'mumei_oni.webp', 'raijin.webp', land ? 'ui/map_land.webp' : 'ui/map_port.webp', 'ui/chest_wood.webp', 'ui/chest_gold.webp', 'ui/washi.png'];
     let done = 0; const total = imgs.length + 2; const tick = () => { done++; if (bar) bar.style.width = Math.round(done / total * 100) + '%'; };
     const ps = imgs.map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = () => { tick(); r(); }; i.src = u; }));
     [['400 40px HyBrush', '百鬼ノ夜'], ['600 20px HyMincho', '旅路']].forEach((f) => ps.push(Promise.resolve().then(() => document.fonts.load(f[0], f[1])).catch(() => {}).then(tick)));
@@ -134,15 +135,20 @@
     $('bAuto').onclick = () => { A.tap(); window.Battle.setAuto(!S.d.set.auto); };
     $('bSpd').onclick = () => { A.tap(); window.Battle.setSpeed(S.d.set.speed >= 3 ? 1 : S.d.set.speed + 1); };
     $('bRet').onclick = () => { A.tap(); UI.modal({ title: T('撤退する?', 'Retreat?'), html: '<p>' + T('この戦いの報酬は得られない。', 'You will forfeit this battle.') + '</p>', btns: [{ t: T('撤退', 'Retreat'), cls: 'pri', fn: () => window.Battle.retreat() }, { t: T('続ける', 'Stay'), cls: 'sub' }] }); };
-    ['pointerdown', 'keydown', 'touchstart'].forEach((e) => document.addEventListener(e, () => A.unlock(), { passive: true }));
+    /* iOS only honours audio unlock from click / touchend; keep pointerdown/touchstart/keydown for other browsers. Also re-run on every gesture so an 'interrupted' context recovers. */
+    ['pointerdown', 'keydown', 'touchstart', 'touchend', 'click'].forEach((e) => document.addEventListener(e, (ev) => { if (ev.isTrusted) A.unlock(); }, { passive: true, capture: true }));
     document.addEventListener('keydown', (e) => { if (UI.screen === 'battle' && /^[1-4]$/.test(e.key)) { const b = document.querySelectorAll('#bCmd .cmd')[+e.key - 1]; if (b) b.click(); } });
-    document.addEventListener('visibilitychange', () => { if (document.hidden) S.save(); else { if (S.newDayCheck() && UI.screen === 'hub') UI.hub(null, true); } });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) S.save(); else { A.wake(); if (S.newDayCheck() && UI.screen === 'hub') UI.hub(null, true); } });
+    window.addEventListener('pagehide', () => { S.save(); }); window.addEventListener('pageshow', () => { A.wake(); });
+    /* save health: one-time toast per failure streak; stop-and-warn when another tab owns the save */
+    S.onSaveFail = () => UI.toast(T('保存できません(容量不足/プライベートモード)。設定から書き出してください', 'Cannot save (storage full or private mode). Export your data in Settings'));
+    S.onLock = (why) => UI.lockNotice(why);
     setInterval(() => { S.d.stats.playSec += 20; S.save(); }, 20000);
     await splashP; UI._booted = true;
-    UI.title(); Ads.loadingFinished(); window.__ready = true;
+    UI.title(); UI.saveNotice(); Ads.loadingFinished(); window.__ready = true;
     if (location.protocol !== 'file:' && 'serviceWorker' in navigator && !/[?&]nosw=1/.test(location.search)) navigator.serviceWorker.register('sw.js').catch(() => {});
     const qs = new URLSearchParams(location.search); if (qs.get('debug') === '1') window.__hy = { UI: UI, State: S, Battle: window.Battle, DATA: D, Ads: Ads, FX: FX, A: A };
   }
-  window.__hy = { get UI() { return UI; }, State: S, Battle: window.Battle, DATA: D, Ads: window.Ads, FX: FX, A: A };
+  /* window.__hy (test/debug hooks) is exposed only with ?debug=1 inside boot() */
   boot();
 })();

@@ -15,6 +15,7 @@
     app.style.width = UI.W + 'px'; app.style.height = UI.H + 'px';
     app.style.transform = 'translate(' + ((vw - UI.W * UI.scale) / 2) + 'px,' + ((vh - UI.H * UI.scale) / 2) + 'px) scale(' + UI.scale + ')';
     app.classList.toggle('port', UI.port); app.classList.toggle('land', !UI.port);
+    app.style.setProperty('--t44', Math.ceil(44 / UI.scale) + 'px'); // 44 physical px (Apple HIG) expressed in design px, for tap targets
     UI.safeArea(vw, vh);
     if (window.FX) FX.resize(UI.W, UI.H, UI.scale);
   };
@@ -271,13 +272,52 @@
     const set = S.d.set; const row = (id, label, on) => '<div class="srow"><span>' + label + '</span><button class="tg ' + (on ? 'on' : '') + '" id="' + id + '">' + (on ? 'ON' : 'OFF') + '</button></div>';
     const m = UI.modal({ title: T('設定', 'Settings'), html: row('sSnd', T('効果音', 'Sound FX'), set.sound) + row('sMus', T('音楽', 'Music'), set.music) + row('sHap', T('振動', 'Haptics'), set.haptic !== false) +
       '<div class="srow"><span>' + T('言語', 'Language') + '</span><span><button class="tg ' + (I18N.lang === 'ja' ? 'on' : '') + '" id="sJa">日本語</button> <button class="tg ' + (I18N.lang === 'en' ? 'on' : '') + '" id="sEn">English</button></span></div>' +
-      '<div class="srow"><span>' + T('セーブデータ', 'Save data') + '</span><button class="btn sm sub" id="sReset">' + T('削除', 'Delete') + '</button></div><p class="sm">' + T('進行はこのブラウザに自動保存されます。', 'Progress is saved automatically in this browser.') + '</p><p class="sm ver">HYAKKI NO YORU v1.0</p>', btns: [{ t: T('閉じる', 'Close'), cls: 'pri' }] });
+      '<div class="srow"><span>' + T('セーブデータ', 'Save data') + '</span><button class="btn sm sub" id="sReset">' + T('削除', 'Delete') + '</button></div><div class="srow"><span>' + T('バックアップ', 'Backup') + '</span><button class="btn sm sub" id="sIO">' + T('書き出し / 読み込み', 'Export / Import') + '</button></div>' + (UI.isStandalone() ? '' : '<p class="sm a2hs" id="sA2">' + T('📱 iPhone: Safariの共有ボタン →「ホーム画面に追加」で起動すると、保存データがSafariに消されにくくなります。念のため、ときどき「書き出し」でバックアップしてください。', '📱 iPhone: tap Safari\'s Share button → "Add to Home Screen" so Safari is less likely to evict your save. Export a backup now and then to be safe.') + '</p>') + '<p class="sm">' + T('進行はこのブラウザに自動保存されます。', 'Progress is saved automatically in this browser.') + '</p><p class="sm ver">HYAKKI NO YORU v1.0</p>', btns: [{ t: T('閉じる', 'Close'), cls: 'pri' }] });
     const q = (id) => m.el.querySelector('#' + id);
     q('sSnd').onclick = () => { set.sound = !set.sound; A.setMuted(!set.sound); S.save(); m.close(); UI.settings(); };
     q('sMus').onclick = () => { set.music = !set.music; A.setMusicOn(set.music); S.save(); m.close(); UI.settings(); };
     q('sHap').onclick = () => { set.haptic = set.haptic === false; S.save(); if (set.haptic) UI.haptic(30); m.close(); UI.settings(); };
     q('sJa').onclick = () => { UI.setLang('ja'); m.close(); UI.settings(); }; q('sEn').onclick = () => { UI.setLang('en'); m.close(); UI.settings(); };
+    q('sIO').onclick = () => { m.close(); UI.saveIO(); };
     q('sReset').onclick = () => { UI.modal({ title: T('本当に削除する?', 'Delete everything?'), html: '<p>' + T('全てのデータが消えます。', 'All progress will be erased.') + '</p>', btns: [{ t: T('削除する', 'Delete'), cls: 'pri', fn: () => { S.reset(); location.reload(); } }, { t: T('やめる', 'Cancel'), cls: 'sub' }] }); };
+  };
+  /* ---------- save backup: export / import, boot warnings, multi-tab lock ---------- */
+  UI.isStandalone = function () { try { return !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); } catch (e) { return false; } };
+  UI.saveIO = function () {
+    const ta = (id, ro, ph) => '<textarea class="iota" id="' + id + '" ' + (ro ? 'readonly ' : '') + 'rows="4" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="' + (ph || '') + '"></textarea>';
+    const m = UI.modal({ cls: 'saveio', title: T('バックアップ', 'Backup'), html:
+      '<p class="sm">' + T('① 書き出し: コピーするかファイルに保存して、メモ等に残しておきます。', '1) Export: copy it or save it as a file and keep it somewhere safe.') + '</p>' + ta('ioOut', true) +
+      '<div class="iobtns"><button class="btn sm pri" id="ioCopy">' + T('コピー', 'Copy') + '</button><button class="btn sm sub" id="ioDl">' + T('ファイル保存', 'Save file') + '</button>' + (S.hasBad() ? '<button class="btn sm sub" id="ioBad">' + T('壊れたデータ', 'Damaged data') + '</button>' : '') + '</div>' +
+      '<p class="sm">' + T('② 読み込み: 貼り付けるか、ファイルを選びます。今のデータは「読み込み」前に退避されます。', '2) Import: paste it or pick a file. Your current data is set aside before it is replaced.') + '</p>' + ta('ioIn', false, T('ここに貼り付け', 'Paste here')) +
+      '<div class="iobtns"><input type="file" id="ioFile" accept=".json,application/json,text/plain"><button class="btn sm pri" id="ioGo">' + T('読み込む', 'Import') + '</button></div><p class="sm" id="ioMsg"></p>',
+      btns: [{ t: T('閉じる', 'Close'), cls: 'sub' }] });
+    const q = (id) => m.el.querySelector('#' + id), msg = (t) => { q('ioMsg').textContent = t; };
+    const out = q('ioOut'); out.value = S.locked ? '' : S.exportJSON(); if (S.locked) msg(T('このセッションは保存されていません(書き出し不可)。', 'This session is not being saved (nothing to export).'));
+    out.onfocus = () => { try { out.select(); } catch (e) {} };
+    q('ioCopy').onclick = () => { out.value = S.exportJSON(); out.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} try { if (navigator.clipboard) navigator.clipboard.writeText(out.value).then(() => msg(T('コピーしました', 'Copied')), () => {}); } catch (e) {} msg(ok ? T('コピーしました', 'Copied') : T('選択しました。長押しでコピーしてください', 'Selected. Long-press to copy')); };
+    q('ioDl').onclick = () => { try { const b = new Blob([S.exportJSON()], { type: 'application/json' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'hyakki-save-' + S.dayKey().replace(/-/g, '') + '.json'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 4000); msg(T('保存しました', 'Saved')); } catch (e) { msg(T('保存できません。コピーを使ってください', 'Could not save a file. Use Copy')); } };
+    if (q('ioBad')) q('ioBad').onclick = () => { out.value = S.badRaw(); out.select(); msg(T('壊れたデータを表示しました(コピーして保管できます)', 'Showing the damaged data (copy it to keep it)')); };
+    q('ioFile').onchange = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { q('ioIn').value = String(r.result || ''); msg(T('ファイルを読み込みました。「読み込む」を押してください', 'File loaded. Press Import')); }; r.onerror = () => msg(T('ファイルを読めません', 'Could not read the file')); r.readAsText(f); };
+    q('ioGo').onclick = () => {
+      const txt = q('ioIn').value; const chk = S.parse(String(txt || '').trim()); const E = { empty: T('空です', 'Empty'), parse: T('JSONとして読めません', 'Not valid JSON'), shape: T('セーブデータの形式が違います', 'Not a valid save'), newer: T('新しいバージョンのデータです。ゲームを更新してください', 'Save is from a newer version; update the game') };
+      if (!chk.d) { msg(E[chk.err] || E.shape); return; }
+      UI.modal({ title: T('読み込む?', 'Import this save?'), html: '<p>' + T('今のデータは置き換えられます(退避は残ります)。', 'Your current data will be replaced (a copy is kept aside).') + '</p>', btns: [{ t: T('読み込む', 'Import'), cls: 'pri', fn: () => { const r = S.importJSON(txt); if (r.ok) { location.reload(); return; } msg(r.err === 'write' ? T('保存領域に書き込めません', 'Storage is full or unavailable') : (E[r.err] || E.shape)); } }, { t: T('やめる', 'Cancel'), cls: 'sub' }] });
+    };
+  };
+  /* shown once after the title appears when the loader had to do something other than a plain load */
+  UI.saveNotice = function () {
+    if (S.status === 'newer') {
+      UI.modal({ cls: 'savewarn', title: T('保存を停止しています', 'Saving is paused'), html: '<p>' + T('このセーブデータは、より新しいバージョンのゲームで作られています(v' + S.foundVer + ')。データを守るため、このセッションでは上書き保存しません。ページを更新して最新版を読み込んでください。', 'This save was made by a newer version of the game (v' + S.foundVer + '). To protect it, nothing will be saved in this session. Reload to get the latest version.') + '</p>', btns: [{ t: T('再読み込み', 'Reload'), cls: 'pri', fn: () => { location.reload(); return false; } }, { t: T('このまま遊ぶ(保存なし)', 'Play without saving'), cls: 'sub' }] });
+    } else if (S.status === 'lost') {
+      UI.modal({ cls: 'savewarn', title: T('セーブデータを読めませんでした', 'Save could not be read'), html: '<p>' + T('保存データが壊れていました。壊れたデータは消さずに退避してあります(設定 → バックアップ →「壊れたデータ」)。新しいデータで始まります。', 'Your save data was damaged. It has been kept aside and not deleted (Settings → Backup → "Damaged data"). A new game will start.') + '</p>', btns: [{ t: 'OK', cls: 'pri' }] });
+    } else if (S.status === 'recovered') {
+      UI.toast(T('保存データが壊れていたため、バックアップから復元しました', 'Save was damaged; restored from the automatic backup'));
+    } else if (S.migratedFrom != null && S.migratedFrom < S.VER) {
+      UI.toast(T('セーブデータを新形式に更新しました', 'Save data upgraded to the new format'));
+    }
+  };
+  UI.lockNotice = function () {
+    UI.modal({ cls: 'savewarn', title: T('別のタブで更新されました', 'Updated in another tab'), html: '<p>' + T('このゲームは別のタブ/ウィンドウでも開かれ、セーブが更新されました。古いデータで上書きしないよう、このタブの保存を停止しました。再読み込みしてください。', 'The game is open in another tab or window and its save changed. Saving is paused here so older data cannot overwrite it. Please reload.') + '</p>', btns: [{ t: T('再読み込み', 'Reload'), cls: 'pri', fn: () => { location.reload(); return false; } }] });
   };
   UI.setLang = function (l) { I18N.set(l); S.d.set.lang = l; S.save(); if (UI.screen === 'hub') UI.hub(null, true); else if (UI.screen === 'title') UI.title(); };
 
@@ -290,6 +330,8 @@
     $('tCont').onclick = () => { A.unlock(); A.ok(); UI.begin(has); };
     if ($('tNew')) $('tNew').onclick = () => { A.unlock(); UI.modal({ title: T('はじめから?', 'Start over?'), html: '<p>' + T('今のデータは消えます。', 'Your current save will be erased.') + '</p>', btns: [{ t: T('はじめから', 'Start over'), cls: 'pri', fn: () => { S.reset(); I18N.set(I18N.lang); S.d.set.lang = I18N.lang; S.save(); UI.begin(false); } }, { t: T('やめる', 'Cancel'), cls: 'sub' }] }); };
     $('tJa').onclick = () => UI.setLang('ja'); $('tEn').onclick = () => UI.setLang('en');
+    /* buttons fade in over ~2.8 s: ignore taps until they are fully visible */
+    ['titleBtns', 'titleFoot'].forEach((id) => { const e = $(id); clearTimeout(e._pe); const an = getComputedStyle(e).animationName; if (an && an !== 'none') { e.style.pointerEvents = 'none'; e._pe = setTimeout(() => { e.style.pointerEvents = ''; }, 2900); } else e.style.pointerEvents = ''; });
     const em = $('embers'); if (!em.children.length) for (let i = 0; i < 26; i++) { const d = document.createElement('i'); d.style.left = (Math.random() * 100) + '%'; d.style.animationDelay = (-Math.random() * 12) + 's'; d.style.animationDuration = (7 + Math.random() * 8) + 's'; d.style.setProperty('--sz', (2 + Math.random() * 5) + 'px'); em.appendChild(d); }
   };
   UI.defeatModal = function (canRevive) {
@@ -300,5 +342,12 @@
   // ad revive resolves the promise created in modalP: patch to route through a holder
   const _mp = UI.modalP; UI.modalP = (o) => new Promise((res) => { UI._defRes = res; _mp(o).then(res); });
 
-  window.addEventListener('resize', () => UI.resize());
+  /* iOS Safari: innerWidth/innerHeight lag behind rotation and toolbar collapse. Recompute on every signal, coalesced to one per frame, plus delayed passes after rotation.
+     (innerHeight is used on purpose: unlike visualViewport.height it does not shrink when the on-screen keyboard opens for the import box.) */
+  let rzq = 0; const rz = () => { if (rzq) return; rzq = requestAnimationFrame(() => { rzq = 0; UI.resize(); }); };
+  window.addEventListener('resize', rz);
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', rz); }
+  const rot = () => { rz(); setTimeout(() => UI.resize(), 120); setTimeout(() => UI.resize(), 450); };
+  window.addEventListener('orientationchange', rot); window.addEventListener('pageshow', rz);
+  if (window.screen && screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', rot);
 })();

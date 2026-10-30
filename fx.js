@@ -8,9 +8,12 @@
     cv = document.getElementById('cvFx'); cx = cv.getContext('2d'); layer = document.getElementById('fxLayer'); setTimeout(() => { try { F.preload(); } catch (e) {} }, 800);
   };
   F.resize = function (W, H, scale) {
-    F.W = W; F.H = H; if (!cv) return; const k = Math.min(2, Math.max(0.75, scale * (window.devicePixelRatio || 1))); F.k = k;
+    F.W = W; F.H = H; if (!cv) return; const HY = window.HY || {}, dpr = window.devicePixelRatio || 1;
+    /* iOS keeps every canvas backing store in GPU memory: cap density hard on lite/safe (DPR 3 phones otherwise get a 1121x1992 canvas) */
+    const k = HY.lite2 ? Math.min(0.75, Math.max(0.5, scale)) : HY.lite ? Math.min(1, Math.max(0.6, scale * Math.min(dpr, 1.5))) : Math.min(2, Math.max(0.75, scale * dpr)); F.k = k;
     cv.width = Math.round(W * k); cv.height = Math.round(H * k); cx.setTransform(k, 0, 0, k, 0, 0);
   };
+  F.degrade = function () { if (F.W) F.resize(F.W, F.H, (window.UI && window.UI.scale) || 1); };
   function kick() { if (!F.running) { F.running = true; F.last = performance.now(); requestAnimationFrame(loop); } }
   F.clear = function () { F.items.length = 0; F.flashes.length = 0; if (cx) cx.clearRect(0, 0, F.W, F.H); if (layer) layer.innerHTML = ''; };
 

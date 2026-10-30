@@ -225,7 +225,7 @@
     cam.fx = cam.tfx = M.x; cam.fy = cam.tfy = M.y; cam.z = cam.tz = 1; S.fx = M.x; S.fy = M.y;
     layerEls = Object.keys(LAY).map((id) => ({ id: id, el: $(id), d: parseFloat($(id).dataset.d), base: LAY[id].base, ex: LAY[id].ex, ey: LAY[id].ey }));
     layerEls.push({ id: 'bg', el: bg, d: 0.15, base: 1.1, ex: 0, ey: 0 });
-    setLevel(q ? ({ full: 0, mid: 1, low: 2 }[q[1]] || 0) : (S.fixed ? 0 : S.level), false);
+    setLevel(q ? ({ full: 0, mid: 1, low: 2 }[q[1]] || 0) : (S.fixed ? 0 : Math.max(S.level, HYlv())), false);
     S.storm = !!(stageDef && (stageDef.bg === 'bg_storm' || stageDef.musicBoss)); nextBolt = T + rnd(2.5, 5);
     start();
   };
@@ -234,5 +234,8 @@
       units: S.units.map((s) => ({ side: s.side, name: s.u.name, x: Math.round(s.px), y: Math.round(s.py), ox: Math.round(s.ox), oy: Math.round(s.oy), z: s.z, alive: s.u.alive })),
       layers: layerEls.map((l) => l.el.style.transform), props: S.props.length };
   };
+  /* iOS / lite devices start on the mid tier, safe mode on low; the fps governor can still step down further */
+  function HYlv() { const h = window.HY || {}; return h.lite2 ? 2 : h.lite ? 1 : 0; }
+  S.degrade = function () { if (S.level < 2) setLevel(2, true); };
   window.Stage = S;
 })();

@@ -8,8 +8,10 @@
   const deg = (i, base, sc) => { sc = sc || HIRA; const o = Math.floor(i / 5); return midi(base + sc[((i % 5) + 5) % 5] + 12 * o); };
   const rnd = (a, b) => a + Math.random() * (b - a);
 
+  let ran = false;
   function build(c) {
-    ctx = c;
+    ctx = c; ran = c.state === 'running';
+    if (typeof c.startRendering !== 'function') c.onstatechange = () => { if (c.state === 'running') ran = true; else if (ran && c.state !== 'closed' && !document.hidden) { try { const p = c.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } };
     master = ctx.createGain(); comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.18;
     const sh = ctx.createWaveShaper(), cv = new Float32Array(2048); for (let i = 0; i < 2048; i++) { const x = i / 1023.5 - 1; cv[i] = Math.tanh(x * 1.15) / Math.tanh(1.15); } sh.curve = cv; sh.oversample = 'none';
@@ -18,8 +20,8 @@
     duckG = ctx.createGain(); duckG.connect(master);
     musBus = ctx.createGain(); musBus.gain.value = 0; musBus.connect(duckG);
     // procedural impulse response (dark, stereo, ~2.4s) -> convolution reverb
-    const sr = ctx.sampleRate, len = Math.floor(sr * 2.4), ir = ctx.createBuffer(2, len, sr);
-    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++) { const t = i / sr, k = 0.12 + 0.8 * Math.min(1, t / 1.6); lp += (Math.random() * 2 - 1 - lp) * (1 - k); d[i] = lp * Math.pow(1 - t / 2.4, 2.2) * Math.exp(-t * 1.3) * (i < sr * 0.012 ? i / (sr * 0.012) : 1); } }
+    const IRD = (window.HY && window.HY.lite) ? 1.3 : 2.4, sr = ctx.sampleRate, len = Math.floor(sr * IRD), ir = ctx.createBuffer(2, len, sr);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++) { const t = i / sr, k = 0.12 + 0.8 * Math.min(1, t / (IRD * 0.667)); lp += (Math.random() * 2 - 1 - lp) * (1 - k); d[i] = lp * Math.pow(1 - t / IRD, 2.2) * Math.exp(-t * 1.3) * (i < sr * 0.012 ? i / (sr * 0.012) : 1); } }
     conv = ctx.createConvolver(); conv.buffer = ir; const out = ctx.createGain(); out.gain.value = 0.55; conv.connect(out); out.connect(master);
     rvSfx = ctx.createGain(); rvSfx.gain.value = 1; rvSfx.connect(conv); rvMus = ctx.createGain(); rvMus.gain.value = 1; rvMus.connect(conv);
     const nl = sr * 2; noiseBuf = ctx.createBuffer(1, nl, sr); const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
@@ -38,20 +40,25 @@
 
   /* ---------- voices ---------- */
   const sendFor = (bus) => (bus === sfxBus || !bus ? rvSfx : rvMus);
+  /* live one-shot voices; on lite devices extra voices are dropped so a combo storm cannot pile up hundreds of nodes */
+  let live = 0; const VMAX = () => ((window.HY && window.HY.lite) ? 28 : 64);
+  function gone(src, nodes) { live++; src.onended = () => { live--; try { for (let i = 0; i < nodes.length; i++) nodes[i].disconnect(); } catch (e) {} }; }
   function tone(f, t0, dur, type, vol, o) {
+    if (live > VMAX()) return;
     o = o || {}; const os = ctx.createOscillator(), g = ctx.createGain(); os.type = type || 'sine'; os.frequency.setValueAtTime(f, t0);
     if (o.det) os.detune.value = o.det; if (o.slide) os.frequency.exponentialRampToValueAtTime(Math.max(20, o.slide), t0 + (o.sd || dur));
     g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + (o.a || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     let n = os; if (o.lp) { const f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = o.lp; os.connect(f2); n = f2; }
     n.connect(g); const bus = o.bus || sfxBus; g.connect(bus); if (o.rv) { const s = ctx.createGain(); s.gain.value = o.rv; g.connect(s); s.connect(sendFor(bus)); }
-    os.start(t0); os.stop(t0 + dur + 0.05);
+    gone(os, [os, g]); os.start(t0); os.stop(t0 + dur + 0.05);
   }
   function noise(t0, dur, vol, f0, f1, type, o) {
+    if (live > VMAX()) return;
     o = o || {}; const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true; s.playbackRate.value = rnd(0.9, 1.1);
     const f = ctx.createBiquadFilter(); f.type = type || 'lowpass'; if (o.q) f.Q.value = o.q; f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t0 + dur);
     const g = ctx.createGain(); const a = o.a || 0.002; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + a); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     s.connect(f); f.connect(g); const bus = o.bus || sfxBus; g.connect(bus); if (o.rv) { const r = ctx.createGain(); r.gain.value = o.rv; g.connect(r); r.connect(sendFor(bus)); }
-    s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
+    gone(s, [s, f, g]); s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
   }
   /* Karplus-Strong plucked string, rendered once per pitch & cached as a buffer */
   const ks = new Map();
@@ -116,7 +123,10 @@
   const runA = (fn) => function () { if (!can()) return; fn(ctx.currentTime, arguments[0], arguments[1]); };
 
   const A = {
-    unlock() { if (ensure() && ctx.state === 'suspended') ctx.resume(); },
+    /* iOS Safari reports 'interrupted' (calls, Siri, app switch) as well as 'suspended': resume from any non-running state; swallow the rejection when there is no gesture yet */
+    /* non-gesture recovery (tab visible again, bfcache restore): only if audio has already run once, so it never creates a context or logs an autoplay warning before the first tap */
+    wake() { if (ctx && ran && ctx.resume && typeof ctx.startRendering !== 'function' && ctx.state !== 'running' && ctx.state !== 'closed') { try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } },
+    unlock() { if (!ensure() || !ctx.resume || typeof ctx.startRendering === 'function') return; if (ctx.state !== 'running' && ctx.state !== 'closed') { try { const p = ctx.resume(); if (p && p.then) p.then(() => { ran = true; }, () => {}); } catch (e) {} } else ran = true; },
     get muted() { return muted; }, setMuted(m) { muted = !!m; if (ctx) applyMute(); },
     get musicOn() { return musicOn; }, setMusicOn(m) { musicOn = !!m; if (ctx) musVol(); },
     setForceMuted(m) { forceMuted = !!m; if (ctx) applyMute(); },

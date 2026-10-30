@@ -251,7 +251,7 @@ svg.i{width:1em;height:1em;vertical-align:-.12em}
 .cs-chest{position:absolute;left:50%;width:480px;margin-left:-240px;top:calc(50% - var(--ct,170px));aspect-ratio:var(--ar,1.2);transform-origin:50% 90%;transition:transform .8s var(--ease),opacity .6s;cursor:pointer;filter:drop-shadow(0 22px 14px rgba(0,0,0,.65))}
 .port .cs{--ct:210px}
 .cs-chest>*,.cs-body>*{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat}
-.cs-aura{inset:-60% -50%!important;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 70%,transparent) 0%,color-mix(in srgb,var(--tc) 25%,transparent) 32%,transparent 62%)!important;opacity:.18;animation:aura 2.2s ease-in-out infinite;transition:opacity .4s;pointer-events:none;z-index:0}
+.cs-aura{inset:-1000px!important;background:radial-gradient(circle 980px at 50% 50%,color-mix(in srgb,var(--tc) 70%,transparent) 0,color-mix(in srgb,var(--tc) 25%,transparent) 506px,transparent 980px)!important;opacity:.18;animation:aura 2.2s ease-in-out infinite;transition:opacity .4s;pointer-events:none;z-index:0}
 @keyframes aura{50%{transform:scale(1.14);opacity:.3}}
 .cs.s-hint .cs-aura{opacity:.9;animation:aura .5s ease-in-out infinite}
 .cs.s-shake .cs-aura{opacity:.4}
@@ -546,3 +546,58 @@ html[lang=en] .port .ci-txt b{font-size:40px}
 .port .cs-skip{top:auto;bottom:calc(36px + var(--sab));right:50%;transform:translateX(50%);white-space:nowrap}
 .port .vic-t{font-size:84px}html[lang=en] .port .vic-t{font-size:76px}.vx div{white-space:nowrap;font-size:14px}
 .cs.s-idle .cs-title small,.cs.s-shake .cs-title small,.cs.s-hint .cs-title small{visibility:hidden}
+
+
+/* ======================= LITE / SAFE MODE (iOS, phones, after a crash) =======================
+   iOS Safari kills the page when composited-layer / backing-store memory runs out. At DPR 3 every layer costs 9x its CSS area, so the big
+   animated, masked, blurred and blended layers are removed or shrunk here. Scoped to html.lite (set by the bootstrap in index.html). */
+html:has(.modal.cs) #world,html:has(.modal.cs) #bg{visibility:hidden}
+.lite #bg.bgdof{filter:none;will-change:auto}
+.lite #world .dof,.lite #wFore,.lite .toro,.lite .hl.near .lamp{filter:none!important}
+.lite #wFore,.lite #wFogA,.lite #wFogB,.lite #wFogC{display:none}
+.lite .fogband{animation:none}
+.lite #world .pl,.lite .prop,.lite .card,.lite .c-spr{will-change:auto}
+.lite .ka-bg{animation:none;will-change:auto;inset:0}
+.lite .ka-moon,.lite .ka-bolt,.lite .cs-flash{mix-blend-mode:normal}
+.lite .ka-fog,.lite #s-hub::before,.lite .ka-moon{display:none}
+.lite .cs .cs-rays{display:none}
+.lite .cs-chest{filter:none}
+.lite .ci-port i{filter:none}
+.lite .cs.s-burst .cs-ring,.lite .cs.morph .cs-ring{animation-name:csringL}
+@keyframes csringL{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(12)}}
+.lite .wm-w{display:none}
+.lite .wm.tz .wm-world{filter:none;opacity:.5}
+.lite .wm-world{-webkit-mask-image:none;mask-image:none}
+.lite .seg-g{filter:none}
+.lite2 .vic-rays,.lite2 .fogband,.lite2 .ka-hero.r{display:none}
+.lite2 #wGround .gclip{-webkit-mask-image:none;mask-image:none}
+.lite2 .cs-aura{animation:none}
+
+/* save backup modal (export/import) + warnings */
+.saveio .mbody{max-height:70%;overflow:auto;-webkit-overflow-scrolling:touch}
+.saveio .iota{display:block;width:100%;box-sizing:border-box;margin:6px 0;padding:8px;font:16px/1.3 ui-monospace,Menlo,monospace;color:#efe8ff;background:rgba(5,3,12,.8);border:1px solid rgba(232,195,106,.45);border-radius:6px;resize:none;-webkit-user-select:text;user-select:text;-webkit-appearance:none}
+.saveio .iobtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px}
+.saveio input[type=file]{flex:1 1 100%;font-size:16px;color:#efe8ff;max-width:100%}
+.a2hs{color:#f0d890}
+.savewarn p{line-height:1.5}
+
+/* ---------- QA batch: tap targets >= 44 physical px (--t44 is set in UI.resize), battle menu, hint ---------- */
+.lang,.tool,.btn,.path,.cmd{min-height:var(--t44,44px);box-sizing:border-box}
+.lang,.tool{display:inline-flex;align-items:center;justify-content:center}
+.tool{min-width:var(--t44,44px)}
+.ic,.arr{min-width:max(52px,var(--t44,44px));min-height:max(52px,var(--t44,44px))}
+.btn.sm{display:inline-flex;align-items:center;justify-content:center}
+.b-tools{align-items:center}
+.title-btns,.title-foot{touch-action:manipulation}
+/* landscape battle: command menu is bottom-anchored and sized from the tap-target height so it never grows up into the field */
+.land{--cmdh:max(78px,var(--t44,78px))}
+.land .b-cmd{top:auto;bottom:calc(8px + var(--sab));left:auto;right:calc(18px + var(--sar));width:540px;grid-auto-rows:var(--cmdh)}
+.land .cmd{height:var(--cmdh)}
+.land .b-ki{top:112px;bottom:auto;left:calc(18px + var(--sal,0px));right:auto;width:auto;justify-content:flex-start}
+.land .b-hint{top:62px}
+/* hint bubble: size to content (left:50% otherwise shrinks it to half the screen and wraps mid-word), keep it above the enemy row in portrait */
+.b-hint{width:max-content;word-break:keep-all;overflow-wrap:break-word;line-break:strict}
+.port .b-hint{top:132px;max-width:640px}
+.port .cmd{height:max(148px,var(--t44,44px))}
+/* portrait: the 44px-physical tools are taller than the 54px top bar; hang them from the top edge instead of centring them off-screen */
+.port .b-tools,.land .b-tools{align-self:flex-start;margin-top:2px}

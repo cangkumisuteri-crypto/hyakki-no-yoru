@@ -8,6 +8,51 @@
 <meta name="theme-color" content="#07050c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<script>
+/* Hyakki lite/safe-mode bootstrap: runs before anything else. iOS Safari kills the WebContent process when GPU/backing-store memory runs out,
+   so iOS and any device that crashed last time get a lighter renderer. Flags: html.lite (iOS / touch phone / after a crash), html.lite2 (safe mode: after repeated crashes or script errors).
+   URL: ?lite=0|1|2 forces a mode, ?safe=0 clears the stored crash state. */
+(function () {
+  var H = window.HY = window.HY || {}, de = document.documentElement, q = location.search, ls = null;
+  try { ls = window.localStorage; } catch (e) {}
+  function get(k) { try { return ls && ls.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { ls && ls.setItem(k, v); } catch (e) {} }
+  var ua = navigator.userAgent || '';
+  var ios = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var phone = false; try { phone = window.matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 820; } catch (e) {}
+  if (/[?&]safe=0/.test(q)) { set('hy_crash', '0'); set('hy_safe', '0'); }
+  /* unclean exit detection: hy_run is "1" while the page is visible and cleared when it is hidden/closed. Still "1" on the next boot = it crashed or was killed while in use. */
+  var crash = +get('hy_crash') || 0;
+  if (get('hy_run') === '1') { crash++; set('hy_crash', String(crash)); }
+  set('hy_run', '1');
+  function clean() { set('hy_run', '0'); }
+  addEventListener('pagehide', clean);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) clean(); else set('hy_run', '1'); });
+  var m = /[?&]lite=(\d)/.exec(q), forced = m ? +m[1] : -1;
+  var lite = forced >= 0 ? forced >= 1 : (ios || phone || crash > 0);
+  var safe = forced >= 0 ? forced >= 2 : (crash >= 2 || get('hy_safe') === '1');
+  H.ios = ios; H.crashes = crash; H.lite = lite || safe; H.lite2 = safe;
+  if (H.lite) de.classList.add('lite'); if (H.lite2) de.classList.add('lite2');
+  /* a script error from our own code downgrades the renderer on the fly instead of leaving a broken screen; repeated errors are remembered */
+  var errs = 0;
+  H.degrade = function (persist) {
+    if (!H.lite) { H.lite = true; de.classList.add('lite'); }
+    if (!H.lite2) { H.lite2 = true; de.classList.add('lite2'); }
+    if (persist) set('hy_safe', '1');
+    try { if (window.Stage && window.Stage.degrade) window.Stage.degrade(); if (window.FX && window.FX.degrade) window.FX.degrade(); } catch (e) {}
+  };
+  function own(file) { return !file || file.indexOf(location.origin) === 0; }
+  addEventListener('error', function (e) {
+    if (!e || !e.error || !own(e.filename)) return; /* resource-load failures and third-party "Script error." are not ours */
+    errs++; try { set('hy_lasterr', String(e.message || e.error).slice(0, 200)); } catch (x) {}
+    H.degrade(errs >= 2);
+  });
+  addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason; if (r && r.stack && r.stack.indexOf(location.origin) < 0) return;
+    errs++; H.degrade(errs >= 2);
+  });
+})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">

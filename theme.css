@@ -545,3 +545,4 @@ html[lang=en] .port .ci-txt b{font-size:40px}
 .port .ci-txt::after{background:linear-gradient(90deg,transparent,#ffe27a,transparent)}
 .port .cs-skip{top:auto;bottom:calc(36px + var(--sab));right:50%;transform:translateX(50%);white-space:nowrap}
 .port .vic-t{font-size:84px}html[lang=en] .port .vic-t{font-size:76px}.vx div{white-space:nowrap;font-size:14px}
+.cs.s-idle .cs-title small,.cs.s-shake .cs-title small,.cs.s-hint .cs-title small{visibility:hidden}

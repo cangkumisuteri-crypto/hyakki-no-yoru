@@ -228,7 +228,7 @@
     layerEls = Object.keys(LAY).map((id) => ({ id: id, el: $(id), d: parseFloat($(id).dataset.d), base: LAY[id].base, ex: LAY[id].ex, ey: LAY[id].ey }));
     layerEls.push({ id: 'bg', el: bg, d: 0.15, base: 1.1, ex: 0, ey: 0 });
     setLevel(q ? ({ full: 0, mid: 1, low: 2 }[q[1]] || 0) : (S.fixed ? 0 : Math.max(S.level, HYlv())), false);
-    S.storm = !!(stageDef && (stageDef.bg === 'bg_storm' || stageDef.musicBoss)); nextBolt = T + rnd(2.5, 5);
+    S.storm = !!(stageDef && (stageDef.bg === 'bg_storm' || stageDef.ch === 2 || stageDef.musicBoss)); nextBolt = T + rnd(2.5, 5);
     start();
   };
   S.stats = function () {

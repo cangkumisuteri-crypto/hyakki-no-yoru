@@ -32,8 +32,8 @@
   UI.haptic = function (p) { try { if (S.d && S.d.set && S.d.set.haptic === false) return; const n = Date.now(); if (n - (UI._hz || 0) < 35) return; UI._hz = n; if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
   UI.show = function (name) {
     const prev = UI.screen, w = $('wipe');
-    if (w && prev !== name && UI._booted && !window.__fast && !/[?&]nowipe/.test(location.search)) { w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); clearTimeout(UI._wt); UI._wt = setTimeout(() => w.classList.remove('go'), 700); }
-    UI.screen = name; document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === 's-' + name));
+    if (w && prev !== name && UI._booted && !(window.HY && window.HY.lite) && !window.__fast && !/[?&]nowipe/.test(location.search)) { w.classList.remove('go'); void w.offsetWidth; w.classList.add('go'); clearTimeout(UI._wt); UI._wt = setTimeout(() => w.classList.remove('go'), 700); }
+    $('app').classList.remove('postwin'); UI.screen = name; document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === 's-' + name));
     $('app').dataset.screen = name;
     if (name === 'battle' || name === 'story') $('app').classList.add('immersive'); else $('app').classList.remove('immersive');
   };
@@ -119,8 +119,8 @@
     let h = '<div class="chhead"><button class="arr" id="chPrev"' + (UI.selCh <= 1 ? ' disabled' : '') + '>◀</button><div class="cht"><small>' + T('第' + ch.id + '章', 'CHAPTER ' + ch.id) + '</small><h2>' + L(ch.n) + '</h2><p>' + L(ch.d) + '</p></div><button class="arr" id="chNext"' + (UI.selCh >= D.CHAPTERS.length ? ' disabled' : '') + '>▶</button></div>';
     if (ch.open) {
       h += '<div class="stages">';
-      const next = D.STAGE_ORDER.find((id) => !S.d.cleared[id]);
-      D.STAGE_ORDER.forEach((id) => {
+      const chIds = D.STAGE_ORDER.filter((id) => D.STAGES[id].ch === ch.id), next = chIds.find((id) => !S.d.cleared[id]);
+      chIds.forEach((id) => {
         const st = D.STAGES[id], cl = S.d.cleared[id], lk = !S.stageUnlocked(id), cur = id === next;
         const boss = !!st.boss;
         h += '<div class="stage ' + (cl ? 'cl ' : '') + (lk ? 'lk ' : '') + (cur ? 'cur ' : '') + (boss ? 'boss' : '') + '" data-id="' + id + '"><div class="sn">' + id + '</div><div class="si"><b>' + L(st.n) + (boss ? ' <em>BOSS</em>' : '') + '</b><small>' + T('推奨Lv.', 'Rec. Lv.') + st.rec + '　' + esc(enemyList(st)) + '</small></div><div class="sr">' + (lk ? '🔒'.replace('🔒', T('未開放', 'Locked')) : cl ? T('済', 'Clear') : T('出陣', 'Go')) + '</div></div>';
@@ -128,7 +128,7 @@
       h += '</div>';
     } else {
       const bossImg = ch.boss;
-      h += '<div class="teaser" style="background-image:url(' + ART(ch.bg) + ')"><div class="tz-in"><div class="tz-boss" style="background-image:url(' + ART(bossImg) + ')"></div><div class="tz-t"><b>COMING SOON</b><p>' + T('この先の物語は、夜明け前に。仲間を育て、絆を深めて待とう。', 'The story continues before dawn. Grow your party and deepen your bonds while you wait.') + '</p>' + (UI.selCh === 2 && S.d.cleared['1-5'] ? '<p class="cl">' + T('「次の山は、雷の峠か。」', '"The next peak is the Thunder Pass."') + '</p>' : '<p class="cl">' + T('第1章をクリアすると手がかりが…', 'Clear Chapter 1 to find clues...') + '</p>') + '</div></div></div>';
+      h += '<div class="teaser" style="background-image:url(' + ART(ch.bg) + ')"><div class="tz-in"><div class="tz-boss" style="background-image:url(' + ART(bossImg) + ')"></div><div class="tz-t"><b>COMING SOON</b><p>' + T('この先の物語は、夜明け前に。仲間を育て、絆を深めて待とう。', 'The story continues before dawn. Grow your party and deepen your bonds while you wait.') + '</p>' + '<p class="cl">' + T('第' + (ch.id - 1) + '章をクリアすると手がかりが…', 'Clear Chapter ' + (ch.id - 1) + ' to find clues...') + '</p>' + '</div></div></div>';
     }
     body.innerHTML = h;
     $('chPrev').onclick = () => { A.tap(); UI.selCh = Math.max(1, UI.selCh - 1); UI.hub(); };

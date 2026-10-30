@@ -553,6 +553,10 @@ html[lang=en] .port .ci-txt b{font-size:40px}
    animated, masked, blurred and blended layers are removed or shrunk here. Scoped to html.lite (set by the bootstrap in index.html). */
 html:has(.modal.cs) #world,html:has(.modal.cs) #bg{visibility:hidden}
 html:has(.modal.cs) #s-battle{display:none}
+#app.postwin #s-battle{display:none}
+#app.postwin #world{visibility:hidden}
+#app.postwin .vic-rays{display:none}
+.lite .vic-rays{display:none}
 .lite #bg.bgdof{filter:none;will-change:auto}
 .lite #world .dof,.lite #wFore,.lite .toro,.lite .hl.near .lamp{filter:none!important}
 .lite #wFore,.lite #wFogA,.lite #wFogB,.lite #wFogC{display:none}

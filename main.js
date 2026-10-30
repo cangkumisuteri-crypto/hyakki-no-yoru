@@ -7,7 +7,7 @@
   /* ---------- visual-novel player ---------- */
   const nameOf = (id) => {
     if (id === '?') return '？？？'; if (!id) return '';
-    if (D.CHARS[id]) return L(D.CHARS[id].n); if (D.ENEMIES[id]) return L(D.ENEMIES[id].n); if (id === 'raijin') return T('雷神・鳴神', 'Raijin Narukami'); return id;
+    if (id === 'goro') return T('ゴロ', 'Goro'); if (id === 'raijin') return T('雷神・鳴神', 'Raijin Narukami'); if (D.CHARS[id]) return L(D.CHARS[id].n); if (D.ENEMIES[id]) return L(D.ENEMIES[id].n); return id;
   };
   UI.playStory = function (id, done) {
     const sc = window.STORY[id]; if (!sc) { if (done) done(); return; }
@@ -79,20 +79,26 @@
   };
   function afterResult(res, first) {
     const st = res.stage, steps = [];
+    if (first && st.post === 'c2s6post') { const pk = 'c2s6path_' + ((S.d.chars.mumei && S.d.chars.mumei.path) || 'oni'); if (window.STORY[pk] && !S.d.seen[pk]) steps.push((n) => UI.playStory(pk, n)); }
     if (first && st.post && !S.d.seen[st.post]) steps.push((n) => UI.playStory(st.post, n));
     if (first && st.join && !S.d.chars[st.join].own) { S.d.chars[st.join].own = true; S.d.newRecruits = (S.d.newRecruits || []).concat([st.join]); }
     if (S.d.newRecruits && S.d.newRecruits.length) { const list = S.d.newRecruits; S.d.newRecruits = []; S.save(); list.forEach((rid) => steps.push((n) => { UI.show('hub'); UI.recruit(rid, n); })); }
     if (first && res.id === '1-5') steps.push((n) => UI.chapterEnd(n));
+    if (first && res.id === '2-6') steps.push((n) => UI.chapterEnd2(n));
     const run = () => { const f = steps.shift(); if (f) f(run); else finalize(res); };
     run();
   }
   UI.recruit = function (id, next) {
-    const def = D.CHARS[id]; if (S.d.party.length < 4 && !S.d.party.includes(id)) { S.d.party.push(id); S.save(); }
-    UI.modal({ cls: 'recruit', title: T('仲間が加わった!', 'A companion joins!'), html: '<div class="rbig" style="background-image:url(' + ART(id) + ')"></div><b class="rn">' + esc(L(def.full)) + '</b><p class="quote">' + esc(L(def.quote)) + '</p>', btns: [{ t: 'OK', cls: 'pri', fn: () => { next(); } }], onOpen: () => A.rare() });
+    const def = D.CHARS[id]; let full = false; if (S.d.party.length < 4 && !S.d.party.includes(id)) { S.d.party.push(id); S.save(); } else if (!S.d.party.includes(id)) full = true;
+    UI.modal({ cls: 'recruit', title: T('仲間が加わった!', 'A companion joins!'), html: '<div class="rbig" style="background-image:url(' + ART(id) + ')"></div><b class="rn">' + esc(L(def.full)) + '</b><p class="quote">' + esc(L(def.quote)) + '</p>' + (full ? '<p class="sm">' + T('編成は4人まで。「仲間」タブで入れ替えられる。', 'The party holds four. Swap them in from the Party tab.') + '</p>' : ''), btns: [{ t: 'OK', cls: 'pri', fn: () => { next(); } }], onOpen: () => A.rare() });
   };
   UI.chapterEnd = function (next) {
     UI.hub('journey'); A.music('title');
-    UI.modal({ cls: 'chend', title: T('第一章 完', 'CHAPTER 1 COMPLETE'), html: '<div class="cliff" style="background-image:url(raijin.webp)"><div class="cliff-t"><small>' + T('第二章', 'CHAPTER 2') + '</small><b>' + L(D.CHAPTERS[1].n) + '</b></div></div><p>' + T('雷鳴が山を越えて響く。鎮守の荒神を鎮めた無名一行の前に、太鼓の音とともに雷神・鳴神が現れる…', 'Thunder rolls across the mountains. As drums echo, Raijin Narukami waits at the Thunder Pass for Mumei and his companions…') + '</p><p class="sm">' + T('続きは近日公開。それまで、仲間を育て、絆を深め、野営で力を蓄えよう!', 'To be continued! Until then, grow your party, deepen bonds, and rest at the campfire.') + '</p>', btns: [{ t: T('旅を続ける', 'Continue'), cls: 'pri', fn: () => next() }], onOpen: () => A.thunderStory() });
+    UI.modal({ cls: 'chend', title: T('第一章 完', 'CHAPTER 1 COMPLETE'), html: '<div class="cliff" style="background-image:url(raijin.webp)"><div class="cliff-t"><small>' + T('第二章', 'CHAPTER 2') + '</small><b>' + L(D.CHAPTERS[1].n) + '</b></div></div><p>' + T('雷鳴が山を越えて響く。鎮守の荒神を鎮めた無名一行の前に、太鼓の音とともに雷神・鳴神が現れる…', 'Thunder rolls across the mountains. As drums echo, Raijin Narukami waits at the Thunder Pass for Mumei and his companions…') + '</p><p class="sm">' + T('第二章「雷鳴の峠」が開いた。旅はまだ続く!', 'Chapter 2, The Thunder Pass, is now open. The journey goes on!') + '</p>', btns: [{ t: T('旅を続ける', 'Continue'), cls: 'pri', fn: () => { UI.selCh = 2; next(); } }], onOpen: () => A.thunderStory() });
+  };
+  UI.chapterEnd2 = function (next) {
+    UI.hub('journey'); A.music('title');
+    UI.modal({ cls: 'chend', title: T('第二章 完', 'CHAPTER 2 COMPLETE'), html: '<div class="cliff" style="background-image:url(ryujin.webp)"><div class="cliff-t"><small>' + T('第三章', 'CHAPTER 3') + '</small><b>' + L(D.CHAPTERS[2].n) + '</b></div></div><p>' + T('雷は去り、峠に静かな夜が戻った。だが遠い水底で、龍神の涙が、ひとつ落ちる…', 'The thunder is gone and the pass is quiet again. But far below, in the deep water, a dragon god sheds a single tear…') + '</p><p class="sm">' + T('仲間を育て、絆を深め、野営で力を蓄えて、次の旅に備えよう。', 'Grow your party, deepen bonds, and rest at the campfire to prepare for the road ahead.') + '</p>', btns: [{ t: T('旅を続ける', 'Continue'), cls: 'pri', fn: () => { UI.selCh = 2; next(); } }], onOpen: () => A.thunderStory() });
   };
   function finalize(res) {
     const go = () => { UI.hub('journey'); if (!UI.sessionPrompted) { UI.sessionPrompted = true; UI.entryQueue(); } };
@@ -106,7 +112,7 @@
   };
   UI.begin = function (has) {
     if (!has) { UI.startStage('1-1'); return; }
-    UI.sessionPrompted = true; UI.hub('journey'); UI.entryQueue();
+    UI.sessionPrompted = true; const nx = D.STAGE_ORDER.find((id) => !S.d.cleared[id]); UI.selCh = nx ? D.STAGES[nx].ch : 2; UI.hub('journey'); UI.entryQueue();
   };
 
   /* ---------- boot ---------- */

@@ -80,11 +80,19 @@
     if (!d && !S.locked && S.status === 'ok') S.status = 'newgame';
     lastJs = null; return S.d;
   };
+  /* session ids: every page load gets its own id. Each save stamps it in a side key just before the main write, so the storage handler can tell
+     (a) its own writes and (b) the previous page of THIS tab (sessionStorage survives a reload; its pagehide save lands right after the new page loads)
+     from a genuinely different tab. A duplicated tab inherits sessionStorage, hence the 3 s cutoff on rule (b). */
+  const SIDK = KEY + '_sid', LOAD_T = Date.now();
+  const mkSid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  let prevSid = null; S.sid = mkSid();
+  try { prevSid = sessionStorage.getItem('hy_sid'); sessionStorage.setItem('hy_sid', S.sid); } catch (e) {}
   S.save = function () {
     if (S.locked) return false;
     let js; try { S.d.lastSeen = Date.now(); js = JSON.stringify(S.d); } catch (e) { return false; }
     const put = (withBak) => {
       const l = ls(); if (!l) throw new Error('nostorage');
+      try { l.setItem(SIDK, S.sid); } catch (e) {}
       l.setItem(KEY, js); lastJs = js;
       const t = Date.now(); if (withBak && t - lastBak > 20000) { lastBak = t; try { l.setItem(BAK, js); } catch (e) {} }
     };
@@ -100,6 +108,8 @@
   window.addEventListener('storage', (e) => {
     if (e.storageArea && window.localStorage && e.storageArea !== window.localStorage) return;
     if (e.key !== KEY && e.key !== null) return; if (e.newValue === lastJs || S.locked || !S.d) return;
+    if (e.key === KEY) { let w = null; try { w = window.localStorage.getItem(SIDK); } catch (x) {}
+      if (w && (w === S.sid || (w === prevSid && Date.now() - LOAD_T < 3000))) return; }
     S.locked = 'tab'; try { if (S.onLock) S.onLock('tab'); } catch (x) {}
   });
   S.reset = function () {
@@ -128,7 +138,8 @@
     S.d.items.push(it); return it;
   };
   S.itemFromCode = function (code) { // 'weapon_r'
-    const p = code.split('_'); return S.makeItem(p[0], { n: 0, r: 1, sr: 2 }[p[1]]);
+    const at = String(code).split('@'), p = at[0].split('_'), it = S.makeItem(p[0], { n: 0, r: 1, sr: 2 }[p[1]]); // 'charm_sr@1' pins the name index
+    if (at[1] != null && D.ITEM_NAMES[it.slot][it.rar][+at[1]]) it.nm = +at[1]; return it;
   };
   S.itemName = (it) => L(D.ITEM_NAMES[it.slot][it.rar][it.nm]);
   S.itemById = (uid) => S.d.items.find((i) => i.uid === uid);

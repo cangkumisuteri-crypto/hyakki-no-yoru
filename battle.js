@@ -148,7 +148,7 @@
     const nameTxt = sk.n ? L(sk.n) : '';
     if (sk.ultimate) { if (window.Stage) Stage.focus(u, 1.3); await cutIn(u, sk); } else if (isA || sk.big || sk.charge || sk.summon) { banner(nameTxt, '', isA ? 'skill' : 'foe'); }
     if (sk.guard) { u.guard = true; u.el.classList.add('guarding'); A.guard(); pop(u, T('防御', 'GUARD'), 'st guard', -30); FX.play('buff', center(u).x, center(u).y); await wait(420); return; }
-    if (sk.charge) { u.charged = true; updateCard(u); A.warn(); shake(false); hint(T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); FX.flash('#ff62d8', 0.25, 0.4); await wait(900); hint(''); return; }
+    if (sk.charge) { u.charged = true; updateCard(u); A.warn(); shake(false); const ce = D.ENEMIES[u.key] || {}; hint(ce.chargeHint ? L(ce.chargeHint) : T('⚠ 荒神が力を溜めている! 次の一撃は「防御」で備えよう', '⚠ The Arakami is gathering power! Brace with GUARD!')); FX.flash(u.col || '#ff62d8', 0.25, 0.4); await wait(900); hint(''); return; }
     if (sk.summon) { await summon(u, sk.summon); return; }
     const lunTs = sk.tgt === 'rand' ? null : pickTargets(u, sk, target);
     if (window.Stage) Stage.act(u, sk, lunTs || foes);
@@ -194,7 +194,7 @@
     await wait(180);
   }
   async function summon(u, key) {
-    A.bellBig(); FX.flash('#ff62d8', 0.3, 0.4); let n = 0;
+    A.bellBig(); FX.flash(u.col || '#ff62d8', 0.3, 0.4); let n = 0;
     while (alive('e').length < 3 && n < 2) { const e = mkEnemy(key, stage.lv, U.e.length); U.e.push(e); buildCard(e, $('bEn')); e.el.classList.add('spawn'); if (window.Stage) Stage.layout(); n++; await wait(300); }
     await wait(300);
   }
@@ -209,9 +209,9 @@
   async function bossIntro(e) {
     const bi = $('bossIn'); if (!bi) return;
     bi.style.setProperty('--col', e.col || '#ff62d8');
-    bi.innerHTML = '<div class="bi-bg"></div><div class="bi-warn"><span>' + new Array(14).join('WARNING ▲ ') + '</span></div><div class="bi-warn b"><span>' + new Array(14).join('警告 ▼ ') + '</span></div><div class="bi-port"><i style="background-image:url(' + ART(e.img) + ')"></i></div><div class="bi-name"><small>' + T('鎮守の荒神', 'GUARDIAN GOD') + '</small><b>' + e.name + '</b></div><div class="bi-fl"></div>';
+    bi.innerHTML = '<div class="bi-bg"></div><div class="bi-warn"><span>' + new Array(14).join('WARNING ▲ ') + '</span></div><div class="bi-warn b"><span>' + new Array(14).join('警告 ▼ ') + '</span></div><div class="bi-port"><i style="background-image:url(' + ART(e.img) + ')"></i></div><div class="bi-name"><small>' + L((D.ENEMIES[e.key] && D.ENEMIES[e.key].title) || ['鎮守の荒神', 'GUARDIAN GOD']) + '</small><b>' + e.name + '</b></div><div class="bi-fl"></div>';
     bi.classList.remove('on'); void bi.offsetWidth; bi.classList.add('on');
-    A.warn(); if (A.bossIntro) A.bossIntro(); hapt([40, 60, 40, 60, 120]); FX.flash('#ff62d8', 0.35, 0.5);
+    A.warn(); if (A.bossIntro) A.bossIntro(); hapt([40, 60, 40, 60, 120]); FX.flash(e.col || '#ff62d8', 0.35, 0.5);
     await waitR(700); if (window.Stage) Stage.shake(0.9); FX.flash('#fff', 0.5, 0.15); hapt([60]);
     await waitR(1900); bi.classList.remove('on'); await waitR(120);
   }
@@ -239,15 +239,16 @@
   async function enemyTurn(u) {
     let sk, key;
     if (u.boss) {
-      if (u.charged) { u.charged = false; updateCard(u); key = 'crush'; }
-      else { const list = ((u.phase === 2 && D.ENEMIES[u.key].ai2) ? D.ENEMIES[u.key].ai2 : u.ai).filter((k) => k !== 'crush'); key = list[u.aiPtr % list.length]; u.aiPtr++; }
+      const csk = D.ENEMIES[u.key].crushSk || 'crush'; // the charged follow-up skill (Arakami: crush, Narukami: tenwari)
+      if (u.charged) { u.charged = false; updateCard(u); key = csk; }
+      else { const list = ((u.phase === 2 && D.ENEMIES[u.key].ai2) ? D.ENEMIES[u.key].ai2 : u.ai).filter((k) => k !== csk); key = list[u.aiPtr % list.length]; u.aiPtr++; }
     } else key = u.ai[Math.floor(Math.random() * u.ai.length)];
     sk = D.ENEMY_SK[key]; await wait(250);
-    if (key === 'crush') { A.crush(); }
+    if (u.boss && key === (D.ENEMIES[u.key].crushSk || 'crush')) { A.crush(); }
     const tg = alive('a'); const target = tg[Math.floor(Math.random() * tg.length)];
     if (has(u, 'charm') && alive('e').length < 2 && sk.tgt !== 'self') { pop(u, T('魅了…', 'Charmed…'), 'st charm'); await wait(500); return; }
     await useSkill(u, Object.assign({}, sk), target);
-    if (u.boss && u.phase === 1 && u.hp < u.maxHp * 0.5 && !summoned && u.alive) { u.phase = 2; summoned = true; u.atk = Math.round(u.atk * 1.15); A.bellBig(); shake(true); banner(T('荒神、激昂', 'THE ARAKAMI ENRAGES'), T('小鬼を呼び出した!', 'It calls forth imps!'), 'foe'); await wait(900); if (D.ENEMIES[u.key].ai.includes('summon') || true) await summon(u, 'kogaki'); }
+    if (u.boss && u.phase === 1 && u.hp < u.maxHp * 0.5 && !summoned && u.alive) { u.phase = 2; summoned = true; u.atk = Math.round(u.atk * 1.15); A.bellBig(); shake(true); const en = D.ENEMIES[u.key].enrage; banner(en ? T(en[0][0], en[0][1]) : T('荒神、激昂', 'THE ARAKAMI ENRAGES'), en ? T(en[1][0], en[1][1]) : T('小鬼を呼び出した!', 'It calls forth imps!'), 'foe'); await wait(900); await summon(u, D.ENEMIES[u.key].summonKey || 'kogaki'); }
   }
   function playerTurn(u) {
     return new Promise((res) => {

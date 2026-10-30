@@ -82,6 +82,14 @@
     charge: { n: ['荒御霊の溜め', 'Gathering Wrath'], tgt: 'self', charge: true },
     crush:  { n: ['大注連縄の圧殺', 'Great Shimenawa Crush'], tgt: 'enemies', hits: [2.0], fx: 'crush', big: true },
     summon: { n: ['小鬼召喚', 'Summon Imps'], tgt: 'self', summon: 'kogaki' },
+    // Chapter 2 - thunder
+    zap:      { n: ['雷噛み', 'Thunder Bite'], tgt: 'enemy', hits: [1.1], fx: 'thunder', st: [{ t: 'stun', ch: 0.15, turns: 1 }] },
+    windblade:{ n: ['鎌風', 'Sickle Wind'], tgt: 'enemies', hits: [0.6], fx: 'wind' },
+    drumroll: { n: ['雷太鼓', 'Thunder Drum'], tgt: 'enemies', hits: [0.5], fx: 'thunder' },
+    taiko:    { n: ['轟雷の連打', 'Roaring Drumbeat'], tgt: 'enemies', hits: [0.6], fx: 'thunder', st: [{ t: 'stun', ch: 0.25, turns: 1 }] },
+    kaminari: { n: ['落雷', 'Lightning Strike'], tgt: 'enemy', hits: [1.5], fx: 'thunderBig', st: [{ t: 'stun', ch: 0.3, turns: 1 }] },
+    tenwari:  { n: ['天割り', 'Heaven-Splitter'], tgt: 'enemies', hits: [1.9], fx: 'thunderBig', big: true },
+    callraijuu:{ n: ['雷獣召喚', 'Summon Raijuu'], tgt: 'self', summon: 'raijuu' },
   };
   D.ENEMIES = {
     kogaki:    { n: ['小鬼', 'Kogaki'], img: 'e_kogaki', base: { hp: 62, atk: 15, def: 5, spd: 98 }, ai: ['bash'], exp: 1, c: '#ff9a3d' },
@@ -89,6 +97,12 @@
     karakasa:  { n: ['唐傘お化け', 'Karakasa'], img: 'e_karakasa', base: { hp: 92, atk: 16, def: 8, spd: 90 }, ai: ['spin', 'tongue'], exp: 1.3, c: '#b080ff' },
     chochin:   { n: ['提灯お化け', 'Chochin-obake'], img: 'e_chochin', base: { hp: 84, atk: 18, def: 6, spd: 102 }, ai: ['flame', 'blaze'], exp: 1.3, c: '#ffb03a' },
     arakami:   { n: ['鎮守の荒神', 'Chinju no Arakami'], img: 'arakami', boss: true, base: { hp: 540, atk: 21, def: 12, spd: 92 }, ai: ['root', 'bell', 'charge', 'crush'], ai2: ['bell', 'root', 'charge', 'crush'], exp: 6, c: '#ff62d8' },
+    // Chapter 2
+    raijuu:     { n: ['雷獣', 'Raijuu'], img: 'e_raijuu', base: { hp: 110, atk: 21, def: 7, spd: 114 }, ai: ['bash', 'zap'], exp: 1.5, c: '#ffd84a' },
+    kamaitachi: { n: ['鎌鼬', 'Kamaitachi'], img: 'e_kamaitachi', base: { hp: 78, atk: 22, def: 5, spd: 124 }, ai: ['windblade', 'bash'], exp: 1.5, c: '#7fe9d0' },
+    raidaiko:   { n: ['雷太鼓', 'Raidaiko'], img: 'e_raidaiko', base: { hp: 130, atk: 20, def: 10, spd: 94 }, ai: ['drumroll', 'bash'], exp: 1.8, c: '#9fb4ff' },
+    raijin:     { n: ['雷神 鳴神', 'Raijin Narukami'], img: 'raijin', boss: true, base: { hp: 760, atk: 24, def: 12, spd: 105 }, ai: ['taiko', 'kaminari', 'charge', 'tenwari'], ai2: ['kaminari', 'taiko', 'kaminari', 'charge', 'tenwari'], crushSk: 'tenwari', exp: 10, c: '#7fa8ff',
+                  title: ['雷鳴の荒神', 'THUNDER GOD'], chargeHint: ['⚠ 雷が天に集まっていく! 次の一撃は「防御」で備えよう', '⚠ Lightning gathers above! Brace with GUARD!'], enrage: [['雷神、激昂', 'NARUKAMI ENRAGES'], ['雷獣を呼び寄せた!', 'He calls the raijuu!']], summonKey: 'raijuu' },
   };
 
   /* ---------- stages (chapter 1 is fully playable) ---------- */
@@ -98,11 +112,17 @@
     '1-3': { ch: 1, n: ['雨の唐傘', 'Umbrellas in the Rain'], bg: 'bg_forest', lv: 4, rec: 4, waves: [['karakasa', 'kogaki'], ['karakasa', 'kitsunebi', 'karakasa']], exp: 130, gold: 260, first: { mag: 40, herb: 3 }, pre: 'c1s3pre', post: 'c1s3post', join: 'shuramaru', drop: 'charm_r' },
     '1-4': { ch: 1, n: ['灯りの宿場', 'The Last Lantern'], bg: 'bg_forest', lv: 5, rec: 6, waves: [['chochin', 'kitsunebi'], ['chochin', 'karakasa', 'kogaki']], exp: 190, gold: 340, first: { mag: 40, fish: 3 }, pre: 'c1s4pre', post: 'c1s4post', join: 'oboro', drop: 'weapon_r' },
     '1-5': { ch: 1, n: ['鎮守の社', 'The Guardian Shrine'], bg: 'bg_shrine', lv: 7, rec: 8, waves: [['kogaki', 'chochin', 'kogaki'], ['arakami']], exp: 300, gold: 600, first: { mag: 100 }, pre: 'c1s5pre', post: 'c1s5post', boss: 'arakami', drop: 'weapon_sr', musicBoss: true },
+    '2-1': { ch: 2, n: ['峠の麓', 'Foot of the Pass'], bg: 'bg_cloud_path', lv: 8, rec: 9, waves: [['raijuu', 'kogaki'], ['raijuu', 'raijuu']], exp: 300, gold: 420, first: { mag: 40, rice: 3 }, pre: 'c2s1pre', post: 'c2s1post', drop: 'armor_r' },
+    '2-2': { ch: 2, n: ['鴉の見張り台', "The Crow's Watch"], bg: 'bg_cloud_path', lv: 9, rec: 10, waves: [['kamaitachi', 'kamaitachi', 'kamaitachi'], ['kamaitachi', 'kitsunebi', 'kamaitachi']], exp: 420, gold: 460, first: { mag: 40, fish: 3 }, pre: 'c2s2pre', post: 'c2s2post', join: 'karasuba', drop: 'weapon_r' },
+    '2-3': { ch: 2, n: ['雷除けの集落', 'The Lightning-Ward Hamlet'], bg: 'bg_shrine_struck_dry', lv: 10, rec: 11, waves: [['raidaiko', 'kamaitachi'], ['raidaiko', 'raidaiko', 'kamaitachi']], exp: 560, gold: 500, first: { mag: 40, herb: 3 }, pre: 'c2s3pre', post: 'c2s3post', drop: 'charm_r' },
+    '2-4': { ch: 2, n: ['雷鳴の石段', 'The Thunder Stairs'], bg: 'bg_storm', lv: 11, rec: 13, waves: [['raijuu', 'raidaiko'], ['raijuu', 'raijuu', 'raidaiko']], exp: 700, gold: 560, first: { mag: 40, rice: 3 }, pre: 'c2s4pre', post: 'c2s4post', drop: 'armor_r' },
+    '2-5': { ch: 2, n: ['太鼓の回廊', 'The Corridor of Drums'], bg: 'bg_storm', lv: 12, rec: 14, waves: [['raijuu', 'raidaiko', 'raijuu'], ['raidaiko', 'raidaiko', 'raijuu']], exp: 850, gold: 620, first: { mag: 60, fish: 3 }, pre: 'c2s5pre', post: 'c2s5post', drop: 'weapon_r' },
+    '2-6': { ch: 2, n: ['雷神 鳴神', 'Raijin Narukami'], bg: 'bg_peak', lv: 14, rec: 16, waves: [['raijuu', 'raidaiko', 'raijuu'], ['raijin']], exp: 1200, gold: 1100, first: { mag: 150 }, pre: 'c2s6pre', post: 'c2s6post', boss: 'raijin', drop: 'charm_sr@1', musicBoss: true },
   };
-  D.STAGE_ORDER = ['1-1', '1-2', '1-3', '1-4', '1-5'];
+  D.STAGE_ORDER = ['1-1', '1-2', '1-3', '1-4', '1-5', '2-1', '2-2', '2-3', '2-4', '2-5', '2-6'];
   D.CHAPTERS = [
     { id: 1, n: ['鈴鳴りの森', 'The Forest of Ringing Bells'], d: ['無名は、鈴の呪いに狂う鎮守の荒神を鎮める旅に出る。', 'Mumei sets out to calm the Guardian God driven mad by a curse of bells.'], boss: 'arakami', bg: 'bg_forest', open: true },
-    { id: 2, n: ['雷鳴の峠', 'The Thunder Pass'], d: ['太鼓の音が山を越えて響く。雷神・鳴神が、道を塞ぐ。', 'Drums echo over the mountains. Raijin Narukami blocks the way.'], boss: 'raijin', bg: 'bg_storm' },
+    { id: 2, n: ['雷鳴の峠', 'The Thunder Pass'], d: ['太鼓の音が山を越えて響く。雷神・鳴神が、道を塞ぐ。', 'Drums echo over the mountains. Raijin Narukami blocks the way.'], boss: 'raijin', bg: 'bg_storm', open: true },
     { id: 3, n: ['蒼淵の祠', 'The Abyssal Shrine'], d: ['水底の社に眠る龍神。その涙が、世界を沈めようとしている。', 'A dragon god sleeps in a drowned shrine. Its tears threaten to sink the world.'], boss: 'ryujin', bg: 'bg_shrine' },
     { id: 4, n: ['夜明けの炎', 'Flames of Dawn'], d: ['すべての元凶、火之迦具土神。夜明けを取り戻す最後の戦い。', 'The origin of it all: Kagutsuchi. The final battle to bring back the dawn.'], boss: 'kagutsuchi', bg: 'bg_title' },
   ];
